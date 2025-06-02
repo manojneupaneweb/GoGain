@@ -1,1 +1,35 @@
-vendor
+# Ignore Composer vendor directory
+/vendor/
+
+# Ignore Composer's lock file if you don't want to commit it
+/composer.lock
+
+# Ignore environment configuration files (keep secrets safe)
+.env
+.env.local
+.env.*.local
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and cache
+/logs/
+cache/
+tmp/
+sessions/
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+*.iml
+
+# Ignore PHPUnit result cache
+.phpunit.result.cache
+
+# Ignore node_modules if you use any node tooling
+/node_modules/
+
+# Ignore build files or public assets if generated
+/public/build/
+/public/storage/
