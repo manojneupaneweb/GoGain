@@ -18,11 +18,15 @@ try {
     if ($method === 'POST' && preg_match('/\/register\/?$/', $uri)) {
         $userController->registerUser();
     }
-    // Login route
     elseif ($method === 'POST' && preg_match('/\/login\/?$/', $uri)) {
         $userController->loginUser();
     }
-    // 404 fallback
+    elseif ($method === 'POST' && preg_match('/\/send-otp\/?$/', $uri)) {
+        $userController->sendOtp();
+    }
+    elseif ($method === 'POST' && preg_match('/\/verify-otp\/?$/', $uri)) {
+        $userController->verifyOtp();
+    }
     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);

@@ -4,7 +4,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   FaBars, FaTimes, FaUser, FaDumbbell, FaLock, FaEnvelope,
-  FaPhone, FaHome, FaUserCircle, FaImage, FaVenusMars, FaCalendarAlt, FaMapMarkerAlt
+  FaPhone, FaHome, FaUserCircle, FaImage, FaVenusMars, FaCalendarAlt,
+  FaMapMarkerAlt, FaCheck, FaSpinner
 } from 'react-icons/fa';
 
 function Header() {
@@ -12,6 +13,12 @@ function Header() {
   const [activeLink, setActiveLink] = useState('home');
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [emailForOTP, setEmailForOTP] = useState('');
+  const [isSendingOTP, setIsSendingOTP] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -23,6 +30,7 @@ function Header() {
     avatar: null,
     location: ''
   });
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -89,46 +97,184 @@ function Header() {
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.email || !formData.password || !formData.fullName) {
+        toast.error('Please fill all required fields', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        return;
+      }
+
+      setIsSendingOTP(true);
+      try {
+        const response = await axios.post('/api/v1/user/send-otp', {
+          email: formData.email
+        });
+        console.log('OTP Response:', response);
+
+
+
+        if (response.status === 200 || response.message == "OTP sent successfully") {
+          setEmailForOTP(formData.email);
+          // setShowSignup(true);
+          setShowOTP(true);
+          toast.success('OTP sent to your email!', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        } else {
+          throw new Error(response.data?.message || 'Failed to send OTP');
+        }
+      } catch (error) {
+        console.error('Error sending OTP:', error);
+        toast.error(error.message || 'Failed to send OTP');
+        throw error; // Re-throw if you need to handle it further up the chain
+      } finally {
+        setIsSendingOTP(false);
+      }
+    } catch (err) {
+      console.log('Error details:', err);
+      console.error('Signup Error:', err.response?.data?.message || err.message);
+
+      toast.error(err.response?.data?.message || 'Failed to send OTP. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    } finally {
+      setIsSendingOTP(false);
+    }
+  };
+
+  const handleOTPChange = (e, index) => {
+    const value = e.target.value;
+    if (isNaN(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto focus to next input
+    if (value && index < 5) {
+      document.getElementById(`otp-input-${index + 1}`).focus();
+    }
+  };
+
+  const handleOTPKeyDown = (e, index) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      document.getElementById(`otp-input-${index - 1}`).focus();
+    }
+  };
+
+  const handleOTPSubmit = async (e) => {
+    e.preventDefault();
+    const otpValue = otp.join('');
+
+    if (otpValue.length !== 6) {
+      toast.error('Please enter a 6-digit OTP', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      const verifyResponse = await axios.post('/api/v1/user/verify-otp',
+        {
+          email: emailForOTP,
+          otp: otpValue
+        }, {
+        withCredentials: true
+      });
+      toast.success('OTP verified successfully!', {
+        position: "top-right",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setShowOTP(false);
+      if (!verifyResponse.data.success) {
+        throw new Error(verifyResponse.data.message || 'OTP verification failed');
+      }
+
       const data = new FormData();
       Object.keys(formData).forEach(key => {
         if (formData[key] !== null && formData[key] !== undefined) {
           data.append(key, formData[key]);
         }
       });
+      try {
+        const registerResponse = await axios.post('/api/v1/user/register', data, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        toast.success('Account created successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        setShowSignup(false);
+        // Reset all states
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          password: '',
+          address: '',
+          gender: 'male',
+          date_of_birth: '',
+          avatar: null,
+          location: ''
+        });
+        setOtp(['', '', '', '', '', '']);
+        setShowOTP(false);
+      } catch (error) {
+        console.error('Registration Error:', error.response?.data?.message || error.message);
+        console.log('Registration Error Details:', error);
+        
+        toast.error(error || 'Registration failed. Please try again.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
 
-      const res = await axios.post('/api/v1/user/register', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      console.log('Signup Success:', res.data);
-      toast.success('Account created successfully!', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-
-      // Reset form and close modal after successful signup
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        password: '',
-        address: '',
-        gender: 'male',
-        date_of_birth: '',
-        avatar: null,
-        location: ''
-      });
-      setShowSignup(false);
+      }
     } catch (err) {
-      console.error('Signup Error:', err.response?.data?.message || err.message);
-      toast.error(err.response?.data?.message || 'Signup failed. Please try again.', {
+      console.log('OTP Verification Error:', err);
+      toast.error(err.response?.data?.message || 'OTP verification failed. Please try again.', {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -137,6 +283,44 @@ function Header() {
         draggable: true,
         progress: undefined,
       });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const resendOTP = async () => {
+    try {
+      setIsSendingOTP(true);
+      const response = await axios.post('/api/v1/user/send-otp', {
+        email: emailForOTP
+      });
+
+      if (response.data.success) {
+        toast.success('New OTP sent to your email!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      } else {
+        throw new Error(response.data.message || 'Failed to resend OTP');
+      }
+    } catch (err) {
+      console.error('Resend OTP Error:', err.response?.data?.message || err.message);
+      toast.error(err.response?.data?.message || 'Failed to resend OTP. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    } finally {
+      setIsSendingOTP(false);
     }
   };
 
@@ -490,8 +674,17 @@ function Header() {
                 <button
                   type="submit"
                   className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-md transition duration-300 flex items-center justify-center shadow-lg"
+                  disabled={isSendingOTP}
                 >
-                  <FaUser className="mr-2" /> Create Account
+                  {isSendingOTP ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2" /> Sending OTP...
+                    </>
+                  ) : (
+                    <>
+                      <FaUser className="mr-2" /> Create Account
+                    </>
+                  )}
                 </button>
 
                 <div className="mt-4 text-center text-gray-400">
@@ -505,6 +698,85 @@ function Header() {
                     className="text-orange-400 hover:text-orange-300 font-medium"
                   >
                     Login
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* OTP Verification Popup */}
+      {showOTP && (
+        <>
+          <PopupOverlay />
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in relative border border-orange-400/30">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-orange-500 flex items-center">
+                  <FaDumbbell className="mr-2" /> Verify Your Email
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowOTP(false);
+                    setShowSignup(true);
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="text-center mb-6">
+                <p className="text-gray-300 mb-2">
+                  We've sent a 6-digit verification code to
+                </p>
+                <p className="font-medium text-white">{emailForOTP}</p>
+              </div>
+
+              <form onSubmit={handleOTPSubmit}>
+                <div className="flex justify-center space-x-3 mb-8">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <input
+                      key={index}
+                      id={`otp-input-${index}`}
+                      type="text"
+                      maxLength="1"
+                      className="w-12 h-12 text-2xl text-center bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white"
+                      value={otp[index]}
+                      onChange={(e) => handleOTPChange(e, index)}
+                      onKeyDown={(e) => handleOTPKeyDown(e, index)}
+                      pattern="\d*"
+                      inputMode="numeric"
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full ${otp.join('').length === 6 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-600 cursor-not-allowed'} text-white font-bold py-3 px-4 rounded-md transition duration-300 flex items-center justify-center`}
+                  disabled={otp.join('').length !== 6 || isVerifying}
+                >
+                  {isVerifying ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2" /> Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <FaCheck className="mr-2" /> Verify & Register
+                    </>
+                  )}
+                </button>
+
+                <div className="mt-4 text-center text-gray-400">
+                  Didn't receive code?{' '}
+                  <button
+                    type="button"
+                    onClick={resendOTP}
+                    className="text-orange-400 hover:text-orange-300 font-medium"
+                    disabled={isSendingOTP}
+                  >
+                    {isSendingOTP ? 'Sending...' : 'Resend OTP'}
                   </button>
                 </div>
               </form>
