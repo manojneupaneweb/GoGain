@@ -5,6 +5,6 @@
         "cloudinary/cloudinary_php": "^3.1",
         "phpmailer/phpmailer": "^6.10",
         "ramsey/uuid": "^4.8",
-        "firebase/php-jwt": "^6.11"
+        "firebase/php-jwt": "*"
     }
 }

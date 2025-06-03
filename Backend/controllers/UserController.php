@@ -293,52 +293,45 @@ class UserController
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['message' => 'Method not allowed']);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
             return;
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             http_response_code(400);
-            echo json_encode(['message' => 'Invalid JSON data']);
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
             return;
         }
 
         if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
-            echo json_encode(['message' => 'Email and password are required']);
+            echo json_encode(['success' => false, 'message' => 'Email and password are required']);
             return;
         }
 
         $email = trim($data['email']);
         $password = $data['password'];
 
-        // Get user by email
+        // Fetch user from database
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if (!$user) {
+        if (!$user || !password_verify($password, $user['password'])) {
             http_response_code(401);
-            echo json_encode(['message' => 'Invalid email or password']);
+            echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
             return;
         }
 
-        // Verify password
-        if (!password_verify($password, $user['password'])) {
-            http_response_code(401);
-            echo json_encode(['message' => 'Invalid email or password']);
-            return;
-        }
-
-        // Update last_login
+        // Update last login timestamp
         $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
         $updateStmt->execute([$user['id']]);
 
-        // Generate JWT token
-        $secretKey = 'your_secret_key_here'; 
+        // JWT configuration
+        $secretKey = 'your_secret_key_here'; // Replace with env/config variable
         $issuedAt = time();
-        $expire = $issuedAt + 3600;
+        $expire = $issuedAt + 3600; // Token valid for 1 hour
 
         $payload = [
             'iat' => $issuedAt,
@@ -350,21 +343,59 @@ class UserController
 
         $jwt = JWT::encode($payload, $secretKey, 'HS256');
 
-        // Return success with user info (no password)
+        // Respond with success and token
+        http_response_code(200);
         echo json_encode([
             'success' => true,
             'message' => 'Login successful',
             'user' => [
                 'id' => $user['id'],
-                'fullName' => $user['fullName'],
+                'fullName' => $user['fullName'], // Adjust to your actual DB field
                 'email' => $user['email'],
                 'avatar' => $user['avatar'],
-                'last_login' => date('Y-m-d H:i:s'),
+                'last_login' => $user['last_login'],
                 'role' => $user['role'],
                 'location' => $user['location'] ?? null
             ],
             'token' => $jwt
         ]);
     }
+
+
+    public function getUser()
+    {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized i login function']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+
+            // Fetch user info (excluding password)
+            $stmt = $this->pdo->prepare("SELECT id, fullName, email, phone, address, gender, date_of_birth, role, avatar, location, created_at, updated_at, last_login FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+                // Optional: update last_login
+                $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+                $updateStmt->execute([$userId]);
+
+                echo json_encode(['success' => true, 'user' => $user]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found']);
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error']);
+        }
+    }
+
 
 }

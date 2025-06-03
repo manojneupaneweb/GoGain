@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/UserController.php';
+require_once __DIR__ . '/../middleware/auth.middleware.php';
 
 header('Content-Type: application/json');
 
@@ -27,6 +28,14 @@ try {
     elseif ($method === 'POST' && preg_match('/\/verify-otp\/?$/', $uri)) {
         $userController->verifyOtp();
     }
+
+
+
+    //procted routes -------------------🔐 Only logged-in users can access
+    elseif ($method === 'GET' && preg_match('/\/getuser\/?$/', $uri)) {
+    checkAuth(); // 
+    $userController->getUser();
+}
     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);

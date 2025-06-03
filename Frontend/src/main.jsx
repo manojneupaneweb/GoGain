@@ -11,9 +11,11 @@ import UserDashboard from "./Pages/Users/UserDashboard.jsx";
 
 // Set up Axios globally
 import axios from "axios";
-import AdminLayout from "./Admin/AdminLayout.jsx";
-import PageNotFound from "./Admin/PageNotFound.jsx";
-import Dashboard from "./Admin/Dashboard.jsx";
+import AdminLayout from "./Pages/Admin/AdminLayout.jsx";
+import PageNotFound from "./Pages/Admin/PageNotFound.jsx";
+import PageNotFound1 from "./Pages/PageNotFound.jsx";
+import Dashboard from "./Pages/Admin/Dashboard.jsx";
+import Contact from "./Pages/Contact.jsx";
 axios.defaults.baseURL = "http://localhost:3000";
 
 
@@ -25,6 +27,8 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/user", element: <UserDashboard /> },
+      { path: "/contact", element: <Contact /> },
+      {path: "*", element: <PageNotFound1/>},
 
 
     ],
