@@ -16,6 +16,8 @@ import PageNotFound from "./Pages/Admin/PageNotFound.jsx";
 import PageNotFound1 from "./Pages/PageNotFound.jsx";
 import Dashboard from "./Pages/Admin/Dashboard.jsx";
 import Contact from "./Pages/Contact.jsx";
+import Pricing from "./Pages/Pricing.jsx";
+import About from "./Pages/About.jsx";
 axios.defaults.baseURL = "http://localhost:3000";
 
 
@@ -27,7 +29,11 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/user", element: <UserDashboard /> },
+      { path: "/about", element: <About /> },
+      { path: "/pricing", element: <Pricing /> },
       { path: "/contact", element: <Contact /> },
+
+
       {path: "*", element: <PageNotFound1/>},
 
 
