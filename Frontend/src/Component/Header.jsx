@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,6 +18,9 @@ function Header() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [emailForOTP, setEmailForOTP] = useState('');
   const [isSendingOTP, setIsSendingOTP] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(300); // 5 minutes in seconds
+  const [canResendOTP, setCanResendOTP] = useState(false);
+  const otpTimerRef = useRef(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -30,6 +33,35 @@ function Header() {
     avatar: null,
     location: ''
   });
+
+  // Start OTP countdown timer
+  useEffect(() => {
+    if (showOTP && otpTimer > 0) {
+      otpTimerRef.current = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(otpTimerRef.current);
+            setCanResendOTP(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (otpTimerRef.current) {
+        clearInterval(otpTimerRef.current);
+      }
+    };
+  }, [showOTP, otpTimer]);
+
+  // Format timer to MM:SS
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -115,14 +147,12 @@ function Header() {
         const response = await axios.post('/api/v1/user/send-otp', {
           email: formData.email
         });
-        console.log('OTP Response:', response);
-
-
 
         if (response.status === 200 || response.message == "OTP sent successfully") {
           setEmailForOTP(formData.email);
-          // setShowSignup(true);
           setShowOTP(true);
+          setOtpTimer(300);
+          setCanResendOTP(false);
           toast.success('OTP sent to your email!', {
             position: "top-right",
             autoClose: 3000,
@@ -138,7 +168,7 @@ function Header() {
       } catch (error) {
         console.error('Error sending OTP:', error);
         toast.error(error.message || 'Failed to send OTP');
-        throw error; // Re-throw if you need to handle it further up the chain
+        throw error;
       } finally {
         setIsSendingOTP(false);
       }
@@ -200,13 +230,17 @@ function Header() {
     setIsVerifying(true);
 
     try {
-      const verifyResponse = await axios.post('/api/v1/user/verify-otp',
-        {
-          email: emailForOTP,
-          otp: otpValue
-        }, {
-        withCredentials: true
-      });
+      // Step 1: Verify OTP
+      const verifyResponse = await axios.post(
+        '/api/v1/user/verify-otp',
+        { email: emailForOTP, otp: otpValue },
+        { withCredentials: true }
+      );
+
+      if (!verifyResponse.data.success) {
+        throw new Error(verifyResponse.data.message || 'OTP verification failed');
+      }
+
       toast.success('OTP verified successfully!', {
         position: "top-right",
         autoClose: 1000,
@@ -216,65 +250,56 @@ function Header() {
         draggable: true,
         progress: undefined,
       });
+
       setShowOTP(false);
-      if (!verifyResponse.data.success) {
-        throw new Error(verifyResponse.data.message || 'OTP verification failed');
+
+      const formToSend = new FormData();
+      formToSend.append('fullName', formData.fullName);
+      formToSend.append('email', formData.email);
+      formToSend.append('phone', formData.phone);
+      formToSend.append('password', formData.password);
+      formToSend.append('address', formData.address);
+      formToSend.append('gender', formData.gender);
+      formToSend.append('date_of_birth', formData.date_of_birth);
+      formToSend.append('location', formData.location);
+      if (formData.avatar) {
+        formToSend.append('avatar', formData.avatar);
       }
 
-      const data = new FormData();
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && formData[key] !== undefined) {
-          data.append(key, formData[key]);
-        }
+      const registerResponse = await axios.post('/api/v1/user/register', formToSend);
+      console.log('Register Response:', registerResponse.data);
+      setShowLogin(true);
+      toast.success('Account created successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
-      try {
-        const registerResponse = await axios.post('/api/v1/user/register', data, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        toast.success('Account created successfully!', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
-        setShowSignup(false);
-        // Reset all states
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          password: '',
-          address: '',
-          gender: 'male',
-          date_of_birth: '',
-          avatar: null,
-          location: ''
-        });
-        setOtp(['', '', '', '', '', '']);
-        setShowOTP(false);
-      } catch (error) {
-        console.error('Registration Error:', error.response?.data?.message || error.message);
-        console.log('Registration Error Details:', error);
-        
-        toast.error(error || 'Registration failed. Please try again.', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
 
-      }
+      // Reset all states
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        password: '',
+        address: '',
+        gender: 'male',
+        date_of_birth: '',
+        avatar: null,
+        location: ''
+      });
+      setOtp(['', '', '', '', '', '']);
+      setShowSignup(false);
+      setShowOTP(false);
+      clearInterval(otpTimerRef.current);
+
+
     } catch (err) {
-      console.log('OTP Verification Error:', err);
-      toast.error(err.response?.data?.message || 'OTP verification failed. Please try again.', {
+      console.error('Error:', err);
+      toast.error(err.response?.data?.message || err.message || 'Something went wrong', {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -288,6 +313,7 @@ function Header() {
     }
   };
 
+
   const resendOTP = async () => {
     try {
       setIsSendingOTP(true);
@@ -296,6 +322,9 @@ function Header() {
       });
 
       if (response.data.success) {
+        setOtpTimer(300);
+        setCanResendOTP(false);
+        setOtp(['', '', '', '', '', '']);
         toast.success('New OTP sent to your email!', {
           position: "top-right",
           autoClose: 3000,
@@ -332,7 +361,7 @@ function Header() {
     <>
       <ToastContainer
         position="top-right"
-        autoClose={3000}
+        autoClose={1000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
@@ -732,6 +761,13 @@ function Header() {
                   We've sent a 6-digit verification code to
                 </p>
                 <p className="font-medium text-white">{emailForOTP}</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {otpTimer > 0 ? (
+                    `Code expires in ${formatTime(otpTimer)}`
+                  ) : (
+                    <span className="text-orange-400">Code expired</span>
+                  )}
+                </p>
               </div>
 
               <form onSubmit={handleOTPSubmit}>
@@ -773,8 +809,8 @@ function Header() {
                   <button
                     type="button"
                     onClick={resendOTP}
-                    className="text-orange-400 hover:text-orange-300 font-medium"
-                    disabled={isSendingOTP}
+                    className={`font-medium ${canResendOTP ? 'text-orange-400 hover:text-orange-300' : 'text-gray-500 cursor-not-allowed'}`}
+                    disabled={!canResendOTP || isSendingOTP}
                   >
                     {isSendingOTP ? 'Sending...' : 'Resend OTP'}
                   </button>

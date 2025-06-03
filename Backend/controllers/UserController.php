@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../models/user.model.php';
 require_once __DIR__ . '/../middleware/email.middleware.php';
+require_once __DIR__ . '/../utils/Cloudinary.php';
+
+require 'vendor/autoload.php';
+use Ramsey\Uuid\Uuid;
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class UserController
 {
@@ -161,7 +168,6 @@ class UserController
         }
     }
 
-
     public function registerUser()
     {
         header('Content-Type: application/json');
@@ -173,82 +179,124 @@ class UserController
         }
 
         try {
-            $data = json_decode(file_get_contents('php://input'), true);
+            $fullName = trim($_POST['fullName'] ?? '');
+            $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+            $phone = trim($_POST['phone'] ?? '');
+            $password = trim($_POST['password'] ?? '');
+            $address = trim($_POST['address'] ?? '');
+            $gender = trim($_POST['gender'] ?? '');
+            $dob = trim($_POST['date_of_birth'] ?? '');
+            $location = trim($_POST['location'] ?? '');
+            $avatarFile = $_FILES['avatar'] ?? null;
 
-            // Sanitize and validate input
-            $fullName = trim($data['fullName'] ?? '');
-            $email = filter_var(trim($data['email'] ?? ''), FILTER_VALIDATE_EMAIL);
-            $phone = trim($data['phone'] ?? '');
-            $password = trim($data['password'] ?? '');
-            $address = trim($data['address'] ?? '');
-            $gender = trim($data['gender'] ?? '');
-            $dob = trim($data['date_of_birth'] ?? '');
-            $avatar = trim($data['avatar'] ?? '');
-            $location = trim($data['location'] ?? '');
+            $missingFields = [];
 
-            if (!$fullName || !$email || !$phone || !$password) {
+            if (empty($fullName))
+                $missingFields[] = 'fullName';
+            if (empty($email))
+                $missingFields[] = 'email';
+            if (empty($phone))
+                $missingFields[] = 'phone';
+            if (empty($password))
+                $missingFields[] = 'password';
+            if (empty($address))
+                $missingFields[] = 'address';
+            if (empty($gender))
+                $missingFields[] = 'gender';
+            if (empty($dob))
+                $missingFields[] = 'date_of_birth';
+            if (empty($location))
+                $missingFields[] = 'location';
+            if (empty($avatarFile) || empty($avatarFile['tmp_name']))
+                $missingFields[] = 'avatar';
+
+            if (!empty($missingFields)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Name, email, phone, and password are required.']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing fields: ' . implode(', ', $missingFields)
+                ]);
                 exit;
             }
 
-            // Check if user already exists
-            $stmt = $this->conn->prepare("SELECT id FROM users WHERE email = ?");
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $stmt->store_result();
-            if ($stmt->num_rows > 0) {
+            // Check if email already exists
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
                 http_response_code(409);
                 echo json_encode(['success' => false, 'message' => 'Email already registered.']);
                 return;
             }
-            $stmt->close();
 
-            // Hash the password
+            // Upload avatar
+            $avatarUrl = uploadOnCloudinary($avatarFile['tmp_name']);
+
+            // Hash password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insert user into database
-            $stmt = $this->conn->prepare("INSERT INTO users (full_name, email, phone, password, address, gender, date_of_birth, avatar, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssssss", $fullName, $email, $phone, $hashedPassword, $address, $gender, $dob, $avatar, $location);
-            $stmt->execute();
+            // Insert user
+            $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
 
-            if ($stmt->affected_rows > 0) {
+            $stmt = $this->pdo->prepare("
+            INSERT INTO users 
+            (id, fullName, email, phone, password, address, gender, date_of_birth, role, avatar, location, created_at, updated_at, last_login) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', ?, ?, NOW(), NOW(), NULL)
+            ");
+
+            $result = $stmt->execute([
+                $id,
+                $fullName,
+                $email,
+                $phone,
+                $hashedPassword,
+                $address,
+                $gender,
+                $dob,
+                $avatarUrl,
+                $location
+            ]);
+
+
+            if ($result) {
                 echo json_encode([
                     'success' => true,
                     'message' => 'User registered successfully.',
                     'data' => [
                         'fullName' => $fullName,
                         'email' => $email,
-                        'phone' => $phone
+                        'phone' => $phone,
+                        'avatar' => $avatarUrl
                     ]
                 ]);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Registration failed. Try again.']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Registration failed.',
+                    'errorInfo' => $stmt->errorInfo()
+                ]);
             }
 
-            $stmt->close();
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'An error occurred during registration.']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'An error occurred during registration.',
+                'error' => $e->getMessage()
+            ]);
         }
     }
-
-
-
 
     public function loginUser()
     {
         header('Content-Type: application/json');
 
-        // Check request method
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['message' => 'Method not allowed']);
             return;
         }
 
-        // Get and validate JSON input
         $data = json_decode(file_get_contents('php://input'), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             http_response_code(400);
@@ -256,11 +304,67 @@ class UserController
             return;
         }
 
-        // Validate required fields
         if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
             echo json_encode(['message' => 'Email and password are required']);
             return;
         }
+
+        $email = trim($data['email']);
+        $password = $data['password'];
+
+        // Get user by email
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(['message' => 'Invalid email or password']);
+            return;
+        }
+
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            http_response_code(401);
+            echo json_encode(['message' => 'Invalid email or password']);
+            return;
+        }
+
+        // Update last_login
+        $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+        $updateStmt->execute([$user['id']]);
+
+        // Generate JWT token
+        $secretKey = 'your_secret_key_here'; 
+        $issuedAt = time();
+        $expire = $issuedAt + 3600;
+
+        $payload = [
+            'iat' => $issuedAt,
+            'exp' => $expire,
+            'sub' => $user['id'],
+            'email' => $user['email'],
+            'role' => $user['role']
+        ];
+
+        $jwt = JWT::encode($payload, $secretKey, 'HS256');
+
+        // Return success with user info (no password)
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login successful',
+            'user' => [
+                'id' => $user['id'],
+                'fullName' => $user['fullName'],
+                'email' => $user['email'],
+                'avatar' => $user['avatar'],
+                'last_login' => date('Y-m-d H:i:s'),
+                'role' => $user['role'],
+                'location' => $user['location'] ?? null
+            ],
+            'token' => $jwt
+        ]);
     }
+
 }

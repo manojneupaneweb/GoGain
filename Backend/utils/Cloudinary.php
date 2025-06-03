@@ -2,33 +2,25 @@
 require 'vendor/autoload.php';
 
 use Cloudinary\Cloudinary;
-use Cloudinary\Configuration\Configuration;
 
 $cloudinary = new Cloudinary([
     'cloud' => [
-        'cloud_name' => $_ENV['CLOUDINARY_CLOUD_NAME'],
-        'api_key'    => $_ENV['CLOUDINARY_API_KEY'],
-        'api_secret' => $_ENV['CLOUDINARY_API_SECRET'],
+        'cloud_name' => 'gogain',
+        'api_key'    => '955313683614897',
+        'api_secret' => 'pm6pb-ceo1ai2vgfXfGQ_7kY8E0',
     ],
 ]);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
-    $file = $_FILES['image']['tmp_name'];
+function uploadOnCloudinary($file)
+{
+    global $cloudinary;
 
     try {
         $upload = $cloudinary->uploadApi()->upload($file, [
-            'folder' => 'user_uploads'
+            'folder' => 'avatars'
         ]);
-
-        echo json_encode([
-            'message' => 'Upload successful!',
-            'url' => $upload['secure_url']
-        ]);
+        return $upload['secure_url'];
     } catch (Exception $e) {
-        echo json_encode([
-            'error' => $e->getMessage()
-        ]);
+        throw new Exception('Upload failed: ' . $e->getMessage());
     }
-} else {
-    echo "No image uploaded.";
 }
