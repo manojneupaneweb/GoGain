@@ -1,257 +1,270 @@
-import React from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, RadialBarChart, RadialBar,
+  AreaChart, Area, ScatterChart, Scatter, RadarChart, Radar, Treemap,
+  ComposedChart, FunnelChart, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+} from 'recharts';
 
 const UserDashboard = () => {
+  const [userData, setUserData] = useState({
+    name: 'Alex Johnson',
+    membership: 'Premium',
+    joinDate: '2023-01-15',
+    nextPayment: '2023-07-15',
+    trainer: 'Sarah Miller',
+    trainerContact: 'sarah@gogain.com',
+    todayFocus: 'Leg Day',
+    workoutDuration: '75 mins',
+    caloriesBurned: 620,
+    currentStreak: 12
+  });
+
+  const [stats, setStats] = useState({
+    workoutsThisWeek: 4,
+    avgWorkoutDuration: 68,
+    bodyFatChange: -2.3,
+    muscleMassChange: 1.7
+  });
+
   // Sample data for charts
   const workoutData = [
-    { name: 'Jan', strength: 65, cardio: 45 },
-    { name: 'Feb', strength: 70, cardio: 50 },
-    { name: 'Mar', strength: 80, cardio: 55 },
-    { name: 'Apr', strength: 85, cardio: 60 },
-    { name: 'May', strength: 90, cardio: 65 },
-    { name: 'Jun', strength: 95, cardio: 70 },
+    { day: 'Mon', duration: 45, calories: 320, type: 'Cardio' },
+    { day: 'Tue', duration: 60, calories: 420, type: 'Strength' },
+    { day: 'Wed', duration: 30, calories: 280, type: 'Yoga' },
+    { day: 'Thu', duration: 75, calories: 580, type: 'Strength' },
+    { day: 'Fri', duration: 50, calories: 350, type: 'HIIT' },
+    { day: 'Sat', duration: 90, calories: 720, type: 'Strength' },
+    { day: 'Sun', duration: 0, calories: 0, type: 'Rest' }
   ];
 
   const progressData = [
-    { name: 'Week 1', weight: 180, bodyFat: 22 },
-    { name: 'Week 2', weight: 178, bodyFat: 21.5 },
-    { name: 'Week 3', weight: 176, bodyFat: 21 },
-    { name: 'Week 4', weight: 174, bodyFat: 20.5 },
-    { name: 'Week 5', weight: 172, bodyFat: 20 },
-    { name: 'Week 6', weight: 170, bodyFat: 19.5 },
+    { month: 'Jan', weight: 78, bodyFat: 22 },
+    { month: 'Feb', weight: 76, bodyFat: 21 },
+    { month: 'Mar', weight: 75, bodyFat: 20.5 },
+    { month: 'Apr', weight: 74, bodyFat: 19.8 },
+    { month: 'May', weight: 73, bodyFat: 19.2 },
+    { month: 'Jun', weight: 72, bodyFat: 18.5 }
   ];
 
-  const recentWorkouts = [
-    { exercise: 'Bench Press', sets: 4, reps: 10, weight: '185 lbs', date: '2023-06-10' },
-    { exercise: 'Squats', sets: 4, reps: 8, weight: '225 lbs', date: '2023-06-09' },
-    { exercise: 'Deadlifts', sets: 3, reps: 6, weight: '275 lbs', date: '2023-06-08' },
-    { exercise: 'Pull-ups', sets: 3, reps: 12, weight: 'Bodyweight', date: '2023-06-07' },
+  const muscleGroupData = [
+    { name: 'Chest', value: 85 },
+    { name: 'Back', value: 75 },
+    { name: 'Legs', value: 90 },
+    { name: 'Shoulders', value: 80 },
+    { name: 'Arms', value: 70 },
+    { name: 'Core', value: 65 }
   ];
 
-  const upcomingClasses = [
-    { name: 'HIIT Blast', time: '7:00 AM', trainer: 'Sarah J.', day: 'Tomorrow' },
-    { name: 'Yoga Flow', time: '6:00 PM', trainer: 'Mike T.', day: 'Wednesday' },
-    { name: 'Spin Class', time: '5:30 AM', trainer: 'Lisa K.', day: 'Friday' },
-  ];
+  useEffect(() => {
+    // Fetch actual user data
+    const fetchData = async () => {
+      const token = localStorage.getItem('accessToken');
+      try {
+        const response = await axios.get('/api/v1/user/dashboard', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUserData(response.data.user);
+        setStats(response.data.stats);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome Back, Alex!</h1>
-        <p className="text-gray-600">Track your fitness journey and progress</p>
+      <div className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Dashboard</h1>
+        <p className="text-gray-600">Welcome back, {userData.name}!</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm font-medium">Current Weight</h3>
-          <p className="text-2xl font-bold text-indigo-600">170 lbs</p>
-          <p className="text-green-500 text-sm">↓ 10 lbs last month</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm font-medium">Body Fat %</h3>
-          <p className="text-2xl font-bold text-indigo-600">19.5%</p>
-          <p className="text-green-500 text-sm">↓ 2.5% last month</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm font-medium">Workouts This Month</h3>
-          <p className="text-2xl font-bold text-indigo-600">18</p>
-          <p className="text-green-500 text-sm">↑ 3 from last month</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-gray-500 text-sm font-medium">Gym Streak</h3>
-          <p className="text-2xl font-bold text-indigo-600">12 days</p>
-          <p className="text-green-500 text-sm">Keep it up!</p>
-        </div>
-      </div>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - User Info */}
+        <div className="space-y-6">
+          {/* User Profile Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                <span className="text-2xl font-bold text-indigo-600">
+                  {userData.name.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{userData.name}</h2>
+                <p className="text-indigo-600">{userData.membership} Member</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Member Since</span>
+                <span>{new Date(userData.joinDate).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Next Payment</span>
+                <span>{new Date(userData.nextPayment).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Current Streak</span>
+                <span>{userData.currentStreak} days</span>
+              </div>
+            </div>
+          </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Workout Performance Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Workout Performance</h2>
-            <div className="h-80">
+          {/* Today's Focus */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Today's Focus</h3>
+            <div className="bg-indigo-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-indigo-700 text-xl">{userData.todayFocus}</h4>
+                  <p className="text-gray-600">Recommended workout</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="bg-white p-2 rounded">
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="font-bold">{userData.workoutDuration}</p>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <p className="text-sm text-gray-500">Calories</p>
+                  <p className="font-bold">{userData.caloriesBurned}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trainer Info */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Your Trainer</h3>
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center">
+                <span className="text-xl font-bold text-purple-600">
+                  {userData.trainer.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h4 className="font-bold">{userData.trainer}</h4>
+                <p className="text-gray-600">{userData.trainerContact}</p>
+                <button className="mt-2 text-sm text-purple-600 hover:text-purple-800">
+                  Message Trainer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Column - Charts */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Workout Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl shadow-md p-4 text-center">
+              <p className="text-gray-500">Workouts This Week</p>
+              <p className="text-3xl font-bold text-indigo-600">{stats.workoutsThisWeek}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-4 text-center">
+              <p className="text-gray-500">Avg Duration</p>
+              <p className="text-3xl font-bold text-green-600">{stats.avgWorkoutDuration} min</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-4 text-center">
+              <p className="text-gray-500">Body Fat %</p>
+              <p className={`text-3xl font-bold ${stats.bodyFatChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {stats.bodyFatChange}%
+              </p>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-4 text-center">
+              <p className="text-gray-500">Muscle Mass</p>
+              <p className={`text-3xl font-bold ${stats.muscleMassChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                +{stats.muscleMassChange}%
+              </p>
+            </div>
+          </div>
+
+          {/* Workout Duration Chart */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Weekly Workout Duration</h3>
+            <div className="w-full h-[300px]"> {/* Adjust height if needed */}
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={workoutData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
+                <AreaChart
+                  data={workoutData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorDuration" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="day" />
                   <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="strength" stroke="#8884d8" strokeWidth={2} />
-                  <Line type="monotone" dataKey="cardio" stroke="#82ca9d" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Progress Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Body Composition Progress</h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={progressData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
                   <Tooltip />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="weight" fill="#8884d8" name="Weight (lbs)" />
-                  <Bar yAxisId="right" dataKey="bodyFat" fill="#82ca9d" name="Body Fat %" />
-                </BarChart>
+                  <Area
+                    type="monotone"
+                    dataKey="duration"
+                    stroke="#8884d8"
+                    fillOpacity={1}
+                    fill="url(#colorDuration)"
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
 
-        {/* Right Column */}
-        <div className="space-y-8">
-          {/* Recent Workouts */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Workouts</h2>
-            <div className="space-y-4">
-              {recentWorkouts.map((workout, index) => (
-                <div key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-gray-800">{workout.exercise}</h3>
-                      <p className="text-sm text-gray-500">{workout.sets} sets × {workout.reps} reps</p>
-                    </div>
-                    <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      {workout.weight}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">{workout.date}</p>
-                </div>
-              ))}
-            </div>
-            <button className="mt-4 w-full py-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-              View All Workouts →
-            </button>
-          </div>
+          {/* Progress Charts */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Weight & Body Fat Chart */}
+  <div className="bg-white rounded-xl shadow-md p-6">
+    <h3 className="text-lg font-semibold mb-4">Weight & Body Fat</h3>
+    <div className="w-full h-[400px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart
+          data={progressData}
+          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+        >
+          <CartesianGrid stroke="#f5f5f5" />
+          <XAxis dataKey="month" />
+          <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+          <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+          <Tooltip />
+          <Legend />
+          <Bar yAxisId="left" dataKey="weight" barSize={20} fill="#8884d8" />
+          <Line yAxisId="right" type="monotone" dataKey="bodyFat" stroke="#82ca9d" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
 
-          {/* Upcoming Classes */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Upcoming Classes</h2>
-            <div className="space-y-4">
-              {upcomingClasses.map((cls, index) => (
-                <div key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-                  <h3 className="font-medium text-gray-800">{cls.name}</h3>
-                  <div className="flex justify-between text-sm text-gray-600 mt-1">
-                    <span>{cls.trainer}</span>
-                    <span>{cls.time}</span>
-                  </div>
-                  <p className="text-xs text-indigo-600 font-medium mt-1">{cls.day}</p>
-                </div>
-              ))}
-            </div>
-            <button className="mt-4 w-full py-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-              Browse All Classes →
-            </button>
-          </div>
-
-          {/* Goals */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Your Goals</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Lose 5 more lbs</span>
-                  <span className="text-sm font-medium text-gray-700">60%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '60%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Bench Press 200 lbs</span>
-                  <span className="text-sm font-medium text-gray-700">75%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '75%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">Attend 20 classes</span>
-                  <span className="text-sm font-medium text-gray-700">45%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-purple-500 h-2.5 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-              </div>
-            </div>
-            <button className="mt-4 w-full py-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-              Set New Goals →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Trainer Notes */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Trainer's Notes</h2>
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-            <p className="text-yellow-700">"Great progress on your squats this week! Let's work on increasing your range of motion next session."</p>
-            <p className="text-sm text-yellow-600 mt-2">- Coach Sarah, June 8</p>
-          </div>
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-            <p className="text-blue-700">"Your cardio endurance has improved significantly. Try adding one more HIIT session per week."</p>
-            <p className="text-sm text-blue-600 mt-2">- Trainer Mike, June 1</p>
-          </div>
-        </div>
-
-        {/* Nutrition Summary */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Nutrition Summary</h2>
-          <div className="grid grid-cols-3 gap-4 text-center mb-4">
-            <div>
-              <p className="text-2xl font-bold text-indigo-600">1,850</p>
-              <p className="text-sm text-gray-500">Calories</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">158g</p>
-              <p className="text-sm text-gray-500">Protein</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-yellow-600">185g</p>
-              <p className="text-sm text-gray-500">Carbs</p>
-            </div>
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-800 mb-2">Today's Macros</h3>
-            <div className="flex items-center mb-2">
-              <span className="w-20 text-sm text-gray-600">Protein</span>
-              <div className="flex-1 bg-gray-300 rounded-full h-2.5">
-                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '34%' }}></div>
-              </div>
-              <span className="w-10 text-right text-sm font-medium ml-2">34%</span>
-            </div>
-            <div className="flex items-center mb-2">
-              <span className="w-20 text-sm text-gray-600">Carbs</span>
-              <div className="flex-1 bg-gray-300 rounded-full h-2.5">
-                <div className="bg-yellow-500 h-2.5 rounded-full" style={{ width: '40%' }}></div>
-              </div>
-              <span className="w-10 text-right text-sm font-medium ml-2">40%</span>
-            </div>
-            <div className="flex items-center">
-              <span className="w-20 text-sm text-gray-600">Fats</span>
-              <div className="flex-1 bg-gray-300 rounded-full h-2.5">
-                <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: '26%' }}></div>
-              </div>
-              <span className="w-10 text-right text-sm font-medium ml-2">26%</span>
-            </div>
-          </div>
-          <button className="mt-4 w-full py-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-            View Meal Plan →
-          </button>
+  {/* Muscle Group Focus Chart */}
+  <div className="bg-white rounded-xl shadow-md p-6">
+    <h3 className="text-lg font-semibold mb-4">Muscle Group Focus</h3>
+    <div className="w-full h-[400px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={muscleGroupData}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="name" />
+          <PolarRadiusAxis />
+          <Radar
+            name="Progress"
+            dataKey="value"
+            stroke="#8884d8"
+            fill="#8884d8"
+            fillOpacity={0.6}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
         </div>
       </div>
     </div>

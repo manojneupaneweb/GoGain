@@ -217,14 +217,17 @@ function Header() {
                 className="md:hidden overflow-hidden"
               >
                 <div className="flex flex-col space-y-3 pt-4 pb-4">
-                  {['home', 'about', 'services', 'pricing', 'contact'].map((link) => (
-                    <MobileNavLink
-                      key={link}
-                      link={link}
-                      activeLink={activeLink}
-                      onClick={handleNavLinkClick}
-                    />
-                  ))}
+                  {['home', 'about', 'services', 'pricing', 'contact'].map((link) => {
+                   link ? 'home' : link=='/';
+                    return (
+                      <MobileNavLink
+                        key={link}
+                        link={link}
+                        activeLink={activeLink}
+                        onClick={handleNavLinkClick}
+                      />
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -332,28 +335,34 @@ const UserDropdown = ({ userData }) => {
   return (
     <div className="relative" ref={dropdownRef}>
       <motion.div
-        whileTap={{ scale: 0.95 }}
-        className="flex items-center space-x-2 cursor-pointer"
+        className="flex items-center gap-3 cursor-pointer px-4 py-2   rounded-full transition-all duration-300 hover:shadow-lg"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
       >
+        <p className="text-sm font-medium text-gray-700">
+          Hi, <span className="text-orange-500">{userData?.fullName}</span>
+        </p>
+
         {userData?.avatar ? (
           <img
             src={userData.avatar}
             alt="User Avatar"
-            className="w-10 h-10 rounded-full cursor-pointer object-cover border-2 border-orange-500"
+            className="w-10 h-10 rounded-full object-cover border-2 border-orange-500 shadow-sm"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-700 p-2 flex items-center justify-center">
-            <FaUser className="text-white" />
+          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shadow-sm">
+            <FaUser className="text-gray-600" />
           </div>
         )}
+
         <motion.div
           animate={{ rotate: isDropdownOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
+          className="ml-1"
         >
-          <FaChevronDown className="text-gray-400 text-sm" />
+          <FaChevronDown className="text-gray-500 text-sm" />
         </motion.div>
       </motion.div>
+
 
       <AnimatePresence>
         {isDropdownOpen && (
@@ -368,8 +377,8 @@ const UserDropdown = ({ userData }) => {
               <>
                 <DropdownItem href="/profile">MY PROFILE</DropdownItem>
                 <DropdownItem href="/dashboard">VIEW DASHBOARD</DropdownItem>
-                <DropdownItem href="/products">PRODUCT STATUS</DropdownItem>
-                <DropdownItem href="/progress">MY PROGRESS</DropdownItem>
+                <DropdownItem href="/myproduct">PRODUCT STATUS</DropdownItem>
+                <DropdownItem href="/setting">SETTING</DropdownItem>
               </>
             )}
             {userData?.role === 'trainer' && (
@@ -532,8 +541,8 @@ const MobileNavLink = ({ link, activeLink, onClick }) => {
         onClick(link);
       }}
       className={`px-6 py-3 text-left rounded-md transition duration-300 cursor-pointer font-bold ${isActive
-          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'
-          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'
+        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
         }`}
     >
       {linkText}
