@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Login from './Login';
 import Signup from './Signup';
 import OTPVerification from './OTPVerification';
+import handelLogout from '../utils/Logout.js';
 
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -46,7 +47,6 @@ function Header() {
       }
     } catch (error) {
       setUserLoggedIn(false);
-      toast.error(error.response?.data?.message || 'Failed to fetch user data');
     }
   };
 
@@ -109,7 +109,7 @@ function Header() {
         pauseOnHover
       />
 
-      <header className="bg-gray-900 text-white shadow-lg sticky top-0 z-50">
+      <header className="bg-gray-900 text-white shadow-lg sticky px-14 top-0 z-50">
         <div className="container mx-auto px-4 md:px-10 py-3">
           <div className="flex justify-between items-center">
             {/* Logo */}
@@ -129,7 +129,7 @@ function Header() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex flex-1 justify-center">
               <nav className="flex items-center space-x-8">
-                {['home', 'about', 'services', 'pricing', 'contact'].map((link) => (
+                {['home', 'about', 'services', 'pricing', 'product', 'contact'].map((link) => (
                   <a
                     key={link}
                     href={`${link}`}
@@ -217,7 +217,7 @@ function Header() {
                 className="md:hidden overflow-hidden"
               >
                 <div className="flex flex-col space-y-3 pt-4 pb-4">
-                  {['home', 'about', 'services', 'pricing', 'contact'].map((link) => {
+                  {['home', 'about', 'services', 'pricing','product', 'contact'].map((link) => {
                    link ? 'home' : link=='/';
                     return (
                       <MobileNavLink
@@ -322,16 +322,6 @@ const UserDropdown = ({ userData }) => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await axios.post('/api/v1/user/logout');
-      localStorage.removeItem('accessToken');
-      window.location.reload();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       <motion.div
@@ -390,13 +380,13 @@ const UserDropdown = ({ userData }) => {
               </>
             )}
             {userData?.role === 'admin' && (
-              <DropdownItem href="/admin-dashboard">ADMIN DASHBOARD</DropdownItem>
+              <DropdownItem href="/admin/dashboard">ADMIN DASHBOARD</DropdownItem>
             )}
             <div className="border-t border-gray-700 my-1"></div>
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={handleLogout}
-              className="block w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white"
+              onClick={handelLogout}
+              className="block w-full text-left px-4 py-2 text-gray-300 cursor-pointer hover:bg-gray-700 hover:text-white"
             >
               LOGOUT
             </motion.button>
@@ -409,16 +399,6 @@ const UserDropdown = ({ userData }) => {
 
 const UserDropdownMobile = ({ userData }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await axios.post('/api/v1/user/logout');
-      localStorage.removeItem('accessToken');
-      window.location.reload();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   return (
     <div className="flex items-center">
@@ -452,7 +432,7 @@ const UserDropdownMobile = ({ userData }) => {
           </div>
           {userData?.role === 'user' && (
             <>
-              <MobileDropdownItem href="/profile">MY PROFILE</MobileDropdownItem>
+              <MobileDropdownItem href="/profile">My Profile</MobileDropdownItem>
               <MobileDropdownItem href="/dashboard">VIEW DASHBOARD</MobileDropdownItem>
               <MobileDropdownItem href="/products">PRODUCT STATUS</MobileDropdownItem>
               <MobileDropdownItem href="/progress">MY PROGRESS</MobileDropdownItem>
@@ -467,13 +447,13 @@ const UserDropdownMobile = ({ userData }) => {
             </>
           )}
           {userData?.role === 'admin' && (
-            <MobileDropdownItem href="/admin-dashboard">ADMIN DASHBOARD</MobileDropdownItem>
+            <MobileDropdownItem href="/admin/dashboard">ADMIN DASHBOARD</MobileDropdownItem>
           )}
           <div className="border-t border-gray-700 my-1"></div>
           <motion.button
             whileTap={{ scale: 0.98 }}
-            onClick={handleLogout}
-            className="px-4 py-2 text-left text-gray-300 hover:bg-gray-800 rounded-md text-sm w-full"
+            onClick={handelLogout}
+            className="px-4 py-2 text-left text-gray-300 hover:bg-gray-800 rounded-md cursor-pointer text-sm w-full"
           >
             LOGOUT
           </motion.button>

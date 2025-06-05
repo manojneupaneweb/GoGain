@@ -88,7 +88,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
               <span className="animate-pulse">Logging in...</span>
             ) : (
               <>
-                <FaUser className="mr-2" /> Login
+                <FaUser className="mr-2 cursor-pointer" /> Login
               </>
             )}
           </button>
@@ -98,8 +98,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
             <button
               type="button"
               onClick={onSwitchToSignup}
-              className="text-orange-400 hover:text-orange-300"
-            >
+              className="text-orange-400 hover:text-orange-300 cursor-pointer"            >
               Sign up
             </button>
           </div>

@@ -30,7 +30,6 @@ try {
     }
 
 
-
     //procted routes -------------------🔐 Only logged-in users can access
     elseif ($method === 'GET' && preg_match('/\/getuser\/?$/', $uri)) {
     checkAuth(); // 
