@@ -93,7 +93,6 @@ export default function AdminLayout() {
       submenu: [
         { name: 'All Products', path: '/admin/all-product' },
         { name: 'Add Product', path: '/admin/add-product' },
-        { name: 'Edit Product', path: '/admin/products/edit' },
       ],
     },
     {
@@ -103,7 +102,7 @@ export default function AdminLayout() {
         { name: 'Pending', path: '/admin/orders/pending' },
         { name: 'Shipping', path: '/admin/orders/shipping' },
         { name: 'Complete', path: '/admin/orders/complete' },
-        { name: 'Cancelled', path: '/admin/orders/cancelled' },
+        { name: 'Cancel', path: '/admin/orders/cancel' },
       ],
     },
     {
@@ -125,9 +124,9 @@ export default function AdminLayout() {
       name: 'Settings',
       icon: CogIcon,
       submenu: [
-        { name: 'Profile', path: '/admin/settings/profile' },
         { name: 'Account', path: '/admin/settings/account' },
         { name: 'Security', path: '/admin/settings/security' },
+        { name: 'userpermission', path: '/admin/settings/userpermission' },
       ],
     },
   ];

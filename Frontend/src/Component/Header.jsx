@@ -2,12 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaBars, FaTimes, FaUser, FaDumbbell, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUser, FaDumbbell, FaChevronDown, FaShoppingCart } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Login from './Login';
 import Signup from './Signup';
 import OTPVerification from './OTPVerification';
 import handelLogout from '../utils/Logout.js';
+import { useCart } from '../utils/CartContext.jsx';
 
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -95,6 +96,9 @@ function Header() {
     />
   );
 
+  const { cartCount } = useCart();
+
+
   return (
     <>
       <ToastContainer
@@ -109,7 +113,7 @@ function Header() {
         pauseOnHover
       />
 
-      <header className="bg-gray-900 text-white shadow-lg sticky px-14 top-0 z-50">
+      <header className="bg-gray-900 text-white shadow-lg sticky px-10 top-0 z-50">
         <div className="container mx-auto px-4 md:px-10 py-3">
           <div className="flex justify-between items-center">
             {/* Logo */}
@@ -144,6 +148,16 @@ function Header() {
                   </a>
                 ))}
               </nav>
+            </div>
+            <div className="relative">
+              <p className="bg-neutral-600 px-4 py-2 rounded-sm text-gray-300 hover:text-white transition duration-300 flex items-center gap-2">
+                <a href="/cart" className="cursor-pointer hover:text-orange-600 text-xl relative">
+                  <FaShoppingCart />
+                  <span className="absolute -top-2 -right-3 bg-red-800 text-white text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-md">
+                    {cartCount}
+                  </span>
+                </a>
+              </p>
             </div>
 
             {/* Auth Buttons */}
@@ -217,8 +231,8 @@ function Header() {
                 className="md:hidden overflow-hidden"
               >
                 <div className="flex flex-col space-y-3 pt-4 pb-4">
-                  {['home', 'about', 'services', 'pricing','product', 'contact'].map((link) => {
-                   link ? 'home' : link=='/';
+                  {['home', 'about', 'services', 'pricing', 'product', 'contact'].map((link) => {
+                    link ? 'home' : link == '/';
                     return (
                       <MobileNavLink
                         key={link}

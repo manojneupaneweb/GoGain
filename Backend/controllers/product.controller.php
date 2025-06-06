@@ -2,12 +2,14 @@
 require_once __DIR__ . '/../models/product.model.php';
 require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
+require_once __DIR__ . '/../models/cart.model.php';
 
 require 'vendor/autoload.php';
 use Ramsey\Uuid\Uuid;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+
 
 
 class ProductController
@@ -150,5 +152,93 @@ class ProductController
             echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
         }
     }
+    public function getProductByID($id)
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Only GET requests are allowed.']);
+            exit;
+        }
+
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Product ID is required.']);
+            return;
+        }
+
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM products WHERE id = ?");
+            $stmt->execute([$id]);
+            $product = $stmt->fetchObject('ProductModel');
+
+            if (!$product) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Product not found.']);
+                return;
+            }
+
+            echo json_encode(['success' => true, 'data' => $product]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
+        }
+    }
+
+
+
+
+
 
 }
+
+
+class CartController
+{
+    public function addToCart()
+    {
+        // Get JSON input from frontend
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        // Extract data
+        $user_id = $data['user_id'] ?? null;
+        $product_id = $data['product_id'] ?? null;
+        $quantity = $data['quantity'] ?? 1;
+
+        // Basic validation
+        if (!$user_id || !$product_id) {
+            http_response_code(400);
+            echo json_encode(['message' => 'Missing required fields.']);
+            return;
+        }
+
+        try {
+            global $pdo;
+
+            // Check if product already in cart
+            $checkStmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ? AND product_id = ?");
+            $checkStmt->execute([$user_id, $product_id]);
+            $existing = $checkStmt->fetch();
+
+            if ($existing) {
+                http_response_code(200);
+                echo json_encode(['message' => 'Product already in cart']);
+                return;
+            }
+
+            // If not exists, insert new cart item
+            $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
+
+            $stmt = $pdo->prepare("INSERT INTO cart (id, user_id, product_id, quantity) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$id, $user_id, $product_id, $quantity]);
+
+            http_response_code(201);
+            echo json_encode(['message' => 'Item added to cart']);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+}
+

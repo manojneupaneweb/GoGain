@@ -7,6 +7,8 @@ header('Content-Type: application/json');
 
 $pdo = require __DIR__ . '/../config/db.php';
 $productController = new ProductController($pdo);
+$cartController = new CartController($pdo);
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -20,7 +22,23 @@ try {
         $productController->createProduct();
     } elseif ($method === 'GET' && preg_match('/\/getallproduct\/?$/', $uri)) {
         $productController->getAllProduct();
-    } else {
+    } elseif ($method === 'GET' && preg_match('/\/api\/v1\/product\/([\w-]+)/', $uri, $matches)) {
+        $id = $matches[1];
+        $productController->getProductByID($id);
+    }
+
+
+
+    // ------------------ cart  product routes -------------------
+   elseif ($method === 'POST' && preg_match('/\/addtocart/', $uri)) {
+    $cartController->addToCart();
+}
+
+
+
+
+    // -----------------------------------------------------------
+    else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);
     }

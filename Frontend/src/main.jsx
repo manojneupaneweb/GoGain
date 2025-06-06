@@ -9,12 +9,20 @@ import {
 import "./index.css";
 import App from "./App.jsx";
 
+// Protected Route
+import {
+    AdminProtectedRoute,
+    TrannirProtectedRoute,
+    UserProtectedRoute,
+} from "./utils/ProtectedRoute.jsx";
+
 // Public Pages
 import Home from "./Pages/Home.jsx";
 import PageNotFound1 from "./Pages/PageNotFound.jsx";
 import About from "./Pages/About.jsx";
 import Pricing from "./Pages/Pricing.jsx";
 import ProductListing from "./Pages/Product.jsx";
+import ProductShow from "./Pages/ProductShow.jsx";
 import Contact from "./Pages/Contact.jsx";
 
 // User pages
@@ -32,21 +40,24 @@ import TrannirDashboard from "./Pages/Trannir/TrannirDashboard.jsx";
 import AdminLayout from "./Pages/Admin/AdminLayout.jsx";
 import AdminDashboard from "./Pages/Admin/AdminDashboard.jsx";
 import PageNotFound from "./Pages/Admin/AdminPageNotFound.jsx";
+import Security from "./Pages/Admin/Settings/security.jsx";
+import PendingOrdres from "./Pages/Admin/Orders/PendingOrdres.jsx";
+import ShippingOrders from "./Pages/Admin/Orders/ShippingOrders.jsx";
+import CompleteOrders from "./Pages/Admin/Orders/CompleteOrders.jsx";
+import UserPermission from "./Pages/Admin/Settings/UserPermission.jsx";
+import CancelOrders from "./Pages/Admin/Orders/CancelOrders.jsx";
+import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
+import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
 
-// Protected Route
-import {
-    AdminProtectedRoute,
-    TrannirProtectedRoute,
-    UserProtectedRoute,
-} from "./utils/ProtectedRoute.jsx";
+
 
 
 
 // Axios setup
 import axios from "axios";
 import Loading from "./Component/Loading.jsx";
-import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
-import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
+import UpdateProduct from "./Pages/Admin/Product/UpdateProduct.jsx";
+import Cart from "./Pages/Users/Cart.jsx";
 axios.defaults.baseURL = "http://localhost:3000";
 
 const router = createBrowserRouter([
@@ -58,6 +69,7 @@ const router = createBrowserRouter([
             { path: "/about", element: <About /> },
             { path: "/pricing", element: <Pricing /> },
             { path: "/product", element: <ProductListing /> },
+            { path: "/product/:id", element: <ProductShow /> },
             { path: "/contact", element: <Contact /> },
             { path: "/loading", element: <Loading /> },
             { path: "*", element: <PageNotFound1 /> },
@@ -84,6 +96,14 @@ const router = createBrowserRouter([
                 element: (
                     <UserProtectedRoute>
                         <MyProduct />
+                    </UserProtectedRoute>
+                ),
+            },
+            {
+                path: "/cart",
+                element: (
+                    <UserProtectedRoute>
+                        <Cart />
                     </UserProtectedRoute>
                 ),
             },
@@ -117,8 +137,24 @@ const router = createBrowserRouter([
         ),
         children: [
             { path: "dashboard", element: <AdminDashboard />, },
+            //product routes
             { path: "add-product", element: <AddProduct />, },
             { path: "all-product", element: <AllProduct />, },
+            { path: "update-product/:id", element: <UpdateProduct />, },
+
+            //orders
+            { path: "orders/pending", element: < PendingOrdres />, },
+            { path: "orders/shipping", element: < ShippingOrders />, },
+            { path: "orders/complete", element: < CompleteOrders />, },
+            { path: "orders/cancel", element: < CancelOrders />, },
+
+
+            //settings
+            { path: "settings/security", element: < Security />, },
+            { path: "settings/userpermission", element: < UserPermission />, },
+
+
+
             { path: "*", element: <PageNotFound />, },
         ],
     },
