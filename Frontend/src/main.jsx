@@ -30,7 +30,7 @@ import UserDashboard from "./Pages/Users/UserDashboard.jsx";
 import UserProfile from "./Pages/Users/UserProfile.jsx";
 import UserSetting from "./Pages/Users/UserSetting.jsx";
 import MyProduct from "./Pages/Users/MyProduct.jsx";
-
+import Createplan from "./Pages/createplan.jsx";
 
 
 // Trannir pages (example page)
@@ -58,6 +58,8 @@ import axios from "axios";
 import Loading from "./Component/Loading.jsx";
 import UpdateProduct from "./Pages/Admin/Product/UpdateProduct.jsx";
 import Cart from "./Pages/Users/Cart.jsx";
+import PaymentSuccess from "./Pages/paymentSuccess.jsx";
+import Services from "./Pages/Services.jsx";
 axios.defaults.baseURL = "http://localhost:3000";
 
 const router = createBrowserRouter([
@@ -68,10 +70,10 @@ const router = createBrowserRouter([
             { path: "/", element: <Home /> },
             { path: "/about", element: <About /> },
             { path: "/pricing", element: <Pricing /> },
+            { path: "/services", element: <Services /> },
             { path: "/product", element: <ProductListing /> },
             { path: "/product/:id", element: <ProductShow /> },
             { path: "/contact", element: <Contact /> },
-            { path: "/loading", element: <Loading /> },
             { path: "*", element: <PageNotFound1 /> },
 
             // ✅ User protected routes
@@ -115,6 +117,25 @@ const router = createBrowserRouter([
                     </UserProtectedRoute>
                 ),
             },
+            {
+                path: "/paymentsuccess",
+                element: (
+                    <UserProtectedRoute>
+                        <PaymentSuccess />
+                    </UserProtectedRoute>
+                ),
+            },
+            {
+                path: "/createplan",
+                element: (
+                    <UserProtectedRoute>
+                        <Createplan />
+                    </UserProtectedRoute>
+                ),
+            },
+
+
+
 
             // ✅ Trannir protected route (example)
             {

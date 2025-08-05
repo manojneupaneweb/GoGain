@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 const addToCart = async (product, user_id = 1, setCartCount) => {
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken');
   if (!token) {
     toast.error('You must be logged in to add items to the cart.');
     return;
@@ -14,7 +14,7 @@ const addToCart = async (product, user_id = 1, setCartCount) => {
     quantity: 1,
   });
   toast.success(res.data.message);
-
+  
   if (setCartCount) {
     setCartCount(prev => prev + 1);
   }

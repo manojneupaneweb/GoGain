@@ -28,6 +28,9 @@ try {
     elseif ($method === 'POST' && preg_match('/\/verify-otp\/?$/', $uri)) {
         $userController->verifyOtp();
     }
+    elseif ($method === 'POST' && preg_match('/\/contactform\/?$/', $uri)) {
+        $userController->contactform();
+    }
 
 
     //procted routes -------------------🔐 Only logged-in users can access

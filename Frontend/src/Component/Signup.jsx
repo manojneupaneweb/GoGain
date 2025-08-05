@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import {
   FaUserCircle, FaEnvelope, FaLock, FaPhone,
   FaVenusMars, FaCalendarAlt, FaMapMarkerAlt,
   FaHome, FaImage, FaDumbbell, FaTimes, 
-  FaSpinner, FaCheck, FaArrowLeft
+  FaSpinner, FaCheck, FaArrowLeft, FaEye, FaEyeSlash,
+  FaLocationArrow, FaMapPin
 } from 'react-icons/fa';
 
 const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
@@ -18,7 +19,8 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
     gender: 'male',
     date_of_birth: '',
     avatar: null,
-    location: ''
+    location: '',
+    coordinates: null
   });
   
   const [otp, setOtp] = useState('');
@@ -27,6 +29,12 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [step, setStep] = useState(1); // 1: Form, 2: OTP Verification
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('idle'); // idle, loading, granted, denied
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+
+  // Check if browser supports geolocation
+  const isGeolocationSupported = 'geolocation' in navigator;
 
   const validateForm = () => {
     const newErrors = {};
@@ -70,6 +78,62 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
         return newErrors;
       });
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const getCurrentLocation = () => {
+    if (!isGeolocationSupported) {
+      toast.warning('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setLocationStatus('loading');
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData(prev => ({
+          ...prev,
+          coordinates: { lat: latitude, lng: longitude }
+        }));
+        
+        // Reverse geocode to get address (using a mock function here - you'd use a real API)
+        reverseGeocode(latitude, longitude).then(address => {
+          setFormData(prev => ({
+            ...prev,
+            location: address,
+            address: address
+          }));
+          setLocationStatus('granted');
+          toast.success('Location detected successfully!');
+        }).catch(() => {
+          setLocationStatus('granted');
+          toast.success('Coordinates captured but address detection failed');
+        });
+      },
+      (error) => {
+        setLocationStatus('denied');
+        toast.error('Location access was denied or failed');
+        console.error('Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Mock reverse geocoding function - replace with actual API call
+  const reverseGeocode = async (lat, lng) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(`Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      }, 1000);
+    });
   };
 
   const handleSendOTP = async () => {
@@ -139,262 +203,297 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black bg-opacity-50">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fade-in relative border border-orange-400/30 overflow-y-auto max-h-screen">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-orange-500 flex items-center">
-            <FaDumbbell className="mr-2" /> 
-            {step === 1 ? 'Join Our Gym!' : 'Verify Your Email'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            <FaTimes />
-          </button>
-        </div>
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fade-in relative border border-orange-400/30 overflow-y-auto max-h-screen">
+        <div className="absolute -inset-1 bg-orange-500/10 rounded-2xl blur-sm"></div>
+        <div className="relative">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-orange-500 flex items-center">
+              <FaDumbbell className="mr-2 animate-bounce" /> 
+              {step === 1 ? 'Join Our Fitness Community!' : 'Verify Your Email'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors duration-200"
+            >
+              <FaTimes />
+            </button>
+          </div>
 
-        {step === 1 ? (
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="flex text-gray-300 mb-2 items-center">
-                <FaUserCircle className="mr-2" /> Full Name
-                {errors.fullName && <span className="text-red-500 text-sm ml-auto">{errors.fullName}</span>}
-              </label>
-              <input
-                name="fullName"
-                type="text"
-                className={`w-full px-4 py-2 bg-gray-700 border ${errors.fullName ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                placeholder="Full Name"
-                value={formData.fullName}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+          {step === 1 ? (
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
                 <label className="flex text-gray-300 mb-2 items-center">
-                  <FaEnvelope className="mr-2" /> Email
-                  {errors.email && <span className="text-red-500 text-sm ml-auto">{errors.email}</span>}
+                  <FaUserCircle className="mr-2 text-orange-400" /> Full Name
+                  {errors.fullName && <span className="text-red-500 text-sm ml-auto">{errors.fullName}</span>}
                 </label>
                 <input
-                  name="email"
-                  type="email"
-                  className={`w-full px-4 py-2 bg-gray-700 border ${errors.email ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaLock className="mr-2" /> Password
-                  {errors.password && <span className="text-red-500 text-sm ml-auto">{errors.password}</span>}
-                </label>
-                <input
-                  name="password"
-                  type="password"
-                  className={`w-full px-4 py-2 bg-gray-700 border ${errors.password ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaPhone className="mr-2" /> Phone Number
-                  {errors.phone && <span className="text-red-500 text-sm ml-auto">{errors.phone}</span>}
-                </label>
-                <input
-                  name="phone"
-                  type="tel"
-                  className={`w-full px-4 py-2 bg-gray-700 border ${errors.phone ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                  placeholder="Phone Number"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaVenusMars className="mr-2" /> Gender
-                </label>
-                <select
-                  name="gender"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaCalendarAlt className="mr-2" /> Date of Birth
-                  {errors.date_of_birth && <span className="text-red-500 text-sm ml-auto">{errors.date_of_birth}</span>}
-                </label>
-                <input
-                  name="date_of_birth"
-                  type="date"
-                  className={`w-full px-4 py-2 bg-gray-700 border ${errors.date_of_birth ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                  value={formData.date_of_birth}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaMapMarkerAlt className="mr-2" /> Location
-                  {errors.location && <span className="text-red-500 text-sm ml-auto">{errors.location}</span>}
-                </label>
-                <input
-                  name="location"
+                  name="fullName"
                   type="text"
-                  className={`w-full px-4 py-2 bg-gray-700 border ${errors.location ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                  placeholder="Your location"
-                  value={formData.location}
+                  className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.fullName ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                  placeholder="Your full name"
+                  value={formData.fullName}
                   onChange={handleInputChange}
                 />
               </div>
-            </div>
 
-            <div className="mb-4">
-              <label className="flex text-gray-300 mb-2 items-center">
-                <FaHome className="mr-2" /> Address
-                {errors.address && <span className="text-red-500 text-sm ml-auto">{errors.address}</span>}
-              </label>
-              <input
-                name="address"
-                type="text"
-                className={`w-full px-4 py-2 bg-gray-700 border ${errors.address ? 'border-red-500' : 'border-gray-600'} rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white`}
-                placeholder="Full Address"
-                value={formData.address}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="flex text-gray-300 mb-2 items-center">
-                <FaImage className="mr-2" /> Profile Picture
-              </label>
-              <div className="flex items-center">
-                <label className="cursor-pointer bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-md border border-gray-600 transition duration-300">
-                  Choose File
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaEnvelope className="mr-2 text-orange-400" /> Email
+                    {errors.email && <span className="text-red-500 text-sm ml-auto">{errors.email}</span>}
+                  </label>
                   <input
-                    name="avatar"
-                    type="file"
-                    className="hidden"
+                    name="email"
+                    type="email"
+                    className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.email ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                    placeholder="your@email.com"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    accept="image/*"
-                  />
-                </label>
-                <span className="ml-2 text-gray-400 text-sm">
-                  {formData.avatar ? formData.avatar.name : 'No file chosen'}
-                </span>
-              </div>
-              {formData.avatar && (
-                <div className="mt-2">
-                  <img
-                    src={URL.createObjectURL(formData.avatar)}
-                    alt="Preview"
-                    className="h-20 w-20 object-cover rounded-md"
                   />
                 </div>
-              )}
-            </div>
 
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-md transition duration-300 flex items-center justify-center shadow-lg"
-              disabled={isSendingOTP}
-            >
-              {isSendingOTP ? (
-                <>
-                  <FaSpinner className="animate-spin mr-2" /> Sending OTP...
-                </>
-              ) : (
-                'Continue to Verification'
-              )}
-            </button>
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaLock className="mr-2 text-orange-400" /> Password
+                    {errors.password && <span className="text-red-500 text-sm ml-auto">{errors.password}</span>}
+                  </label>
+                  <div className="relative">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full px-4 py-3 pr-12 bg-gray-700/80 border ${errors.password ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-400 transition-colors duration-200"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-            <div className="mt-4 text-center text-gray-400">
-              Already have an account?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="text-orange-400 hover:text-orange-300 font-medium"
-              >
-                Login
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="text-center">
-            <div className="mb-6 text-gray-300">
-              <p>We've sent a 6-digit verification code to:</p>
-              <p className="font-bold text-orange-400 mt-1">{formData.email}</p>
-              <p className="text-sm mt-2">Please check your inbox and enter the code below</p>
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-300 mb-2">Verification Code</label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white text-center text-xl tracking-widest"
-                placeholder="123456"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-              />
-            </div>
-            
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(1)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-md transition duration-300 flex items-center justify-center"
-              >
-                <FaArrowLeft className="mr-2" /> Back
-              </button>
-              
-              <button
-                onClick={handleVerifyOTP}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-md transition duration-300 flex items-center justify-center shadow-lg"
-                disabled={isVerifyingOTP || isRegistering}
-              >
-                {isVerifyingOTP || isRegistering ? (
-                  <>
-                    <FaSpinner className="animate-spin mr-2" /> 
-                    {isRegistering ? 'Registering...' : 'Verifying...'}
-                  </>
-                ) : (
-                  <>
-                    <FaCheck className="mr-2" /> Verify & Register
-                  </>
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaPhone className="mr-2 text-orange-400" /> Phone Number
+                    {errors.phone && <span className="text-red-500 text-sm ml-auto">{errors.phone}</span>}
+                  </label>
+                  <input
+                    name="phone"
+                    type="tel"
+                    className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.phone ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                    placeholder="Phone Number"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaVenusMars className="mr-2 text-orange-400" /> Gender
+                  </label>
+                  <select
+                    name="gender"
+                    className="w-full px-4 py-3 bg-gray-700/80 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white transition-all duration-200"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer-not-to-say">Prefer not to say</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaCalendarAlt className="mr-2 text-orange-400" /> Date of Birth
+                    {errors.date_of_birth && <span className="text-red-500 text-sm ml-auto">{errors.date_of_birth}</span>}
+                  </label>
+                  <input
+                    name="date_of_birth"
+                    type="date"
+                    className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.date_of_birth ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white transition-all duration-200`}
+                    value={formData.date_of_birth}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="flex text-gray-300 mb-2 items-center">
+                    <FaMapMarkerAlt className="mr-2 text-orange-400" /> Location
+                    {errors.location && <span className="text-red-500 text-sm ml-auto">{errors.location}</span>}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      name="location"
+                      type="text"
+                      className={`flex-1 px-4 py-3 bg-gray-700/80 border ${errors.location ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                      placeholder="Your location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={!isGeolocationSupported || locationStatus === 'loading'}
+                      className="bg-orange-500/80 hover:bg-orange-600 text-white px-4 rounded-lg transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Detect current location"
+                    >
+                      {locationStatus === 'loading' ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        <FaLocationArrow />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="flex text-gray-300 mb-2 items-center">
+                  <FaHome className="mr-2 text-orange-400" /> Address
+                  {errors.address && <span className="text-red-500 text-sm ml-auto">{errors.address}</span>}
+                </label>
+                <input
+                  name="address"
+                  type="text"
+                  className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.address ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
+                  placeholder="Full Address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="flex text-gray-300 mb-2 items-center">
+                  <FaImage className="mr-2 text-orange-400" /> Profile Picture
+                </label>
+                <div className="flex items-center gap-4">
+                  <label className="cursor-pointer bg-gradient-to-r from-orange-500/80 to-orange-600/80 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg border border-orange-400/30 transition-all duration-300 shadow-md">
+                    Choose File
+                    <input
+                      name="avatar"
+                      type="file"
+                      className="hidden"
+                      onChange={handleInputChange}
+                      accept="image/*"
+                    />
+                  </label>
+                  <span className="text-gray-400 text-sm">
+                    {formData.avatar ? formData.avatar.name : 'No file chosen'}
+                  </span>
+                </div>
+                {formData.avatar && (
+                  <div className="mt-3 flex items-center gap-4">
+                    <img
+                      src={URL.createObjectURL(formData.avatar)}
+                      alt="Preview"
+                      className="h-16 w-16 object-cover rounded-lg border border-gray-600/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({...prev, avatar: null}))}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 )}
-              </button>
-            </div>
-            
-            <div className="mt-4 text-gray-400 text-sm">
-              Didn't receive code?{' '}
+              </div>
+
               <button
-                onClick={handleSendOTP}
-                className="text-orange-400 hover:text-orange-300"
+                type="submit"
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-orange-500/30"
                 disabled={isSendingOTP}
               >
-                {isSendingOTP ? 'Sending...' : 'Resend OTP'}
+                {isSendingOTP ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2" /> Sending OTP...
+                  </>
+                ) : (
+                  'Continue to Verification'
+                )}
               </button>
+
+              <div className="mt-4 text-center text-gray-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToLogin}
+                  className="text-orange-400 hover:text-orange-300 font-medium transition-colors duration-200"
+                >
+                  Login
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="text-center">
+              <div className="mb-6 text-gray-300">
+                <p>We've sent a 6-digit verification code to:</p>
+                <p className="font-bold text-orange-400 mt-1">{formData.email}</p>
+                <p className="text-sm mt-2">Please check your inbox and enter the code below</p>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-gray-300 mb-2">Verification Code</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 bg-gray-700/80 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white text-center text-xl tracking-widest transition-all duration-200"
+                  placeholder="••••••"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                />
+              </div>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex-1 bg-gray-700/80 hover:bg-gray-600/80 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-md"
+                >
+                  <FaArrowLeft className="mr-2" /> Back
+                </button>
+                
+                <button
+                  onClick={handleVerifyOTP}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-orange-500/30"
+                  disabled={isVerifyingOTP || isRegistering}
+                >
+                  {isVerifyingOTP || isRegistering ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2" /> 
+                      {isRegistering ? 'Registering...' : 'Verifying...'}
+                    </>
+                  ) : (
+                    <>
+                      <FaCheck className="mr-2" /> Verify & Register
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              <div className="mt-4 text-gray-400 text-sm">
+                Didn't receive code?{' '}
+                <button
+                  onClick={handleSendOTP}
+                  className="text-orange-400 hover:text-orange-300 transition-colors duration-200"
+                  disabled={isSendingOTP}
+                >
+                  {isSendingOTP ? 'Sending...' : 'Resend OTP'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

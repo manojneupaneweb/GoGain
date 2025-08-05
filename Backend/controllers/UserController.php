@@ -361,7 +361,6 @@ class UserController
         ]);
     }
 
-
     public function getUser()
     {
         header('Content-Type: application/json');
@@ -396,6 +395,82 @@ class UserController
             echo json_encode(['success' => false, 'message' => 'Server error']);
         }
     }
+
+
+    public function contactform()
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed.']);
+            exit;
+        }
+
+        try {
+            // Receive raw JSON input
+            $input = json_decode(file_get_contents("php://input"), true);
+
+            $name = trim($input['name'] ?? '');
+            $email = filter_var(trim($input['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+            $subject = trim($input['subject'] ?? '');
+            $message = trim($input['message'] ?? '');
+
+            // Track missing fields
+            $missingFields = [];
+            if (empty($name))
+                $missingFields[] = 'name';
+            if (empty($email))
+                $missingFields[] = 'email';
+            if (empty($subject))
+                $missingFields[] = 'subject';
+            if (empty($message))
+                $missingFields[] = 'message';
+
+            if (!empty($missingFields)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing fields: ' . implode(', ', $missingFields)
+                ]);
+                exit;
+            }
+
+            // Insert into DB
+            $stmt = $this->pdo->prepare("INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)");
+            $result = $stmt->execute([$name, $email, $subject, $message]);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Message sent successfully.',
+                    'data' => [
+                        'name' => $name,
+                        'email' => $email,
+                        'subject' => $subject
+                    ]
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to submit message.',
+                    'errorInfo' => $stmt->errorInfo()
+                ]);
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'An error occurred while sending the message.',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
+
 
 
 }

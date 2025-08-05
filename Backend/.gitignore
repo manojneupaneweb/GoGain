@@ -8,6 +8,7 @@
 .env
 .env.local
 .env.*.local
+package-lock.json
 
 # Ignore system files
 .DS_Store

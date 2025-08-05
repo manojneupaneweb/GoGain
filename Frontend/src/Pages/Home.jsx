@@ -85,10 +85,12 @@ const HeroSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button className="bg-orange-600 hover:bg-orange-700 cursor-pointer text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-md transition duration-300">
-              <a href="/user">Get Started Today</a>
+              <a href="/pricing">Get Started Today</a>
             </button>
             <button className="bg-transparent hover:bg-orange-600 cursor-pointer text-white font-bold py-2 sm:py-3 px-4 sm:px-6 border border-white rounded-md transition duration-300">
+              <a href="/about">
               Learn More
+              </a>
             </button>
           </div>
         </div>
@@ -108,7 +110,6 @@ const HeroSection = () => {
     </section>
   );
 };
-
 
 
 const Trainers = () => {

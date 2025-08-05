@@ -1,22 +1,19 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/product.controller.php';
+require_once __DIR__ . '/../controllers/cart.controller.php'; // ✅ Needed
 require_once __DIR__ . '/../middleware/admin.middleware.php';
 
 header('Content-Type: application/json');
 
-$pdo = require __DIR__ . '/../config/db.php';
+$pdo = $pdo; // assuming db.php returns $pdo
 $productController = new ProductController($pdo);
-$cartController = new CartController($pdo);
-
 
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 try {
-
-
-    //procted routes -------------------🔐 Only logged-in users can access
+    // Protected product routes 🔐
     if ($method === 'POST' && preg_match('/\/addproduct\/?$/', $uri)) {
         checkAdminAuth();
         $productController->createProduct();
@@ -27,17 +24,8 @@ try {
         $productController->getProductByID($id);
     }
 
+    // Cart routes
 
-
-    // ------------------ cart  product routes -------------------
-   elseif ($method === 'POST' && preg_match('/\/addtocart/', $uri)) {
-    $cartController->addToCart();
-}
-
-
-
-
-    // -----------------------------------------------------------
     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);

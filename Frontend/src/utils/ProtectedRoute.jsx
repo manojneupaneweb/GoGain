@@ -4,6 +4,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import Loading from '../Component/Loading';
 
 const fetchUser = async () => {
   const token = localStorage.getItem('accessToken');
@@ -37,7 +38,7 @@ const AdminProtectedRoute = ({ children }) => {
     getUser();
   }, [navigate]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loading/>
   return user ? children : null;
 };
 
@@ -59,7 +60,7 @@ const TrannirProtectedRoute = ({ children }) => {
     getUser();
   }, [navigate]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loading/>;
   return user ? children : null;
 };
 
@@ -83,7 +84,7 @@ const UserProtectedRoute = ({ children }) => {
     getUser();
   }, [navigate]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return  <Loading/>;
   return user ? children : null;
 };
 

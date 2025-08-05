@@ -1,5 +1,7 @@
 import { FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import axios from 'axios';
+import { useState } from 'react';
 
 const Contact = () => {
   const contactInfo = [
@@ -21,6 +23,72 @@ const Contact = () => {
       value: "Kawasoti-2, Panchakanya Chowk, Nawalpur, Gandaki Province, Nepal"
     }
   ];
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [cooldown, setCooldown] = useState(0); // in seconds
+
+  // Handle form input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const response = await axios.post('/api/v1/user/contactform', formData);
+      if (response.data.success) {
+        setSubmitSuccess(true);
+        // Start 5 minute cooldown (300 seconds)
+        setCooldown(300);
+        // Start countdown timer
+        const timer = setInterval(() => {
+          setCooldown(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        setError(response.data.message || 'Failed to send message');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'An error occurred while sending your message');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Format time from seconds to MM:SS
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
@@ -92,7 +160,22 @@ const Contact = () => {
             className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
           >
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h3>
-            <form className="space-y-6">
+            {submitSuccess && (
+              <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-lg">
+                <p>Your message has been sent successfully!</p>
+                {cooldown > 0 && (
+                  <p className="mt-2 text-sm">
+                    You can send another message in: {formatTime(cooldown)}
+                  </p>
+                )}
+              </div>
+            )}
+            {error && (
+              <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
+                {error}
+              </div>
+            )}
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -101,8 +184,11 @@ const Contact = () => {
                   type="text"
                   id="name"
                   name="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                  disabled={cooldown > 0}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all disabled:bg-gray-100"
                   placeholder="Your name"
                 />
               </div>
@@ -115,8 +201,11 @@ const Contact = () => {
                   type="email"
                   id="email"
                   name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                  disabled={cooldown > 0}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all disabled:bg-gray-100"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -129,8 +218,11 @@ const Contact = () => {
                   type="text"
                   id="subject"
                   name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                  disabled={cooldown > 0}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all disabled:bg-gray-100"
                   placeholder="How can we help?"
                 />
               </div>
@@ -143,18 +235,30 @@ const Contact = () => {
                   id="message"
                   name="message"
                   rows="5"
+                  value={formData.message}
+                  onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                  disabled={cooldown > 0}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all disabled:bg-gray-100"
                   placeholder="Your message here..."
                 ></textarea>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center"
+                disabled={isSubmitting || cooldown > 0}
+                className={`w-full ${cooldown > 0 ? 'bg-gray-400' : 'bg-orange-500 hover:bg-orange-600'} text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center`}
               >
-                <FaPaperPlane className="mr-2" />
-                Send Message
+                {isSubmitting ? (
+                  'Sending...'
+                ) : cooldown > 0 ? (
+                  `Wait ${formatTime(cooldown)}`
+                ) : (
+                  <>
+                    <FaPaperPlane className="mr-2" />
+                    Send Message
+                  </>
+                )}
               </button>
             </form>
           </motion.div>
