@@ -7,7 +7,7 @@ ini_set('error_log', __DIR__ . '/../logs/php-error.log');
 // --- CORS Setup ---
 $allowedOrigins = [
     'http://localhost:5173',
-];
+]; 
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
