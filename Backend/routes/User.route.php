@@ -31,6 +31,10 @@ try {
     elseif ($method === 'POST' && preg_match('/\/contactform\/?$/', $uri)) {
         $userController->contactform();
     }
+   elseif ($method === 'GET' && preg_match('/\/getcontactform\/?$/', $uri)) {
+    $userController->getcontactform();
+}
+
 
 
     //procted routes -------------------🔐 Only logged-in users can access

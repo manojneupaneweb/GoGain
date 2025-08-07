@@ -5,8 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { FaTrash, FaPlus, FaMinus, FaShoppingCart, FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { Link, redirect } from 'react-router-dom';
-import { useCart } from '../../utils/CartContext';
-import Loading from '../../Component/Loading'
+import Loading from '../../Component/Loading';
 import { initiateEsewaPayment, initiateKhaltiPayment } from '../../utils/payment';
 
 function Cart() {
@@ -20,19 +19,28 @@ function Cart() {
 
     const fetchCartItems = async () => {
         try {
+            setLoading(true);
             const response = await axios.get('/api/v1/cart/getcartitem', {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('accessToken')}`
                 },
                 withCredentials: true
             });
-            const items = Array.isArray(response.data.data.items) ? response.data.data.items : [];
+
+            // Ensure we always have an array and properly formatted items
+            const items = Array.isArray(response.data?.data?.items)
+                ? response.data.data.items.map(item => ({
+                    ...item,
+                    quantity: Number(item.quantity) || 1,
+                    price: parseFloat(item.price) || 0
+                }))
+                : [];
 
             setCartItems(items);
             calculateTotals(items);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Error fetching cart items');
-            console.log(error);
+            console.error('Fetch cart error:', error);
         } finally {
             setLoading(false);
         }
@@ -40,11 +48,10 @@ function Cart() {
 
     const calculateTotals = (items) => {
         const calculatedSubtotal = items.reduce(
-            (sum, item) => sum + (parseFloat(item.price) * item.quantity),
+            (sum, item) => sum + (item.price * item.quantity),
             0
         );
         const calculatedShipping = calculatedSubtotal > 100 ? 0 : 10;
-
         setSubtotal(calculatedSubtotal);
         setShipping(calculatedShipping);
         setTotal(calculatedSubtotal + calculatedShipping);
@@ -54,50 +61,54 @@ function Cart() {
         if (newQuantity < 1) return;
 
         try {
-            console.log("productid : ", productId);
-            console.log("newQuantity : ", newQuantity);
+            const updatedItems = cartItems.map(item =>
+                item.product_id === productId ? { ...item, quantity: newQuantity } : item
+            );
+            setCartItems(updatedItems);
+            calculateTotals(updatedItems);
 
             const token = localStorage.getItem('accessToken');
-            const response = await axios.put(`/api/v1/cart/${productId}`, {
-                quantity: newQuantity
-            }, {
+            await axios.put(
+                `/api/v1/cart/${productId}`,
+                { quantity: newQuantity },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true
+                }
+            );
+        } catch (error) {
+            fetchCartItems();
+            toast.error(error.response?.data?.message || 'Error updating cart');
+            console.error('Update quantity error:', error);
+        }
+    };
+
+    const removeItem = async (productId) => {
+        if (!productId) {
+            console.error('No product ID provided for removal');
+            return;
+        }
+
+        try {
+            // Optimistic UI update
+            const updatedItems = cartItems.filter(item => item.product_id !== productId);
+            setCartItems(updatedItems);
+            calculateTotals(updatedItems);
+
+            const token = localStorage.getItem('accessToken');
+            await axios.delete(`/api/v1/cart/delete/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
                 withCredentials: true
             });
 
-            console.log("response : ", response);
-
-            if (response.data.success) {
-                const updatedItems = cartItems.map(item =>
-                    item.id === productId ? { ...item, quantity: newQuantity } : item
-                );
-                setCartItems(updatedItems);
-                calculateTotals(updatedItems);
-                toast.success('Cart updated');
-            }
+            toast.success('Item removed from cart');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error updating cart');
-        }
-    };
-
-    const removeItem = async (productId) => {
-        try {
-            const token = localStorage.getItem('accessToken');
-            const response = await axios.delete(`/api/v1/cart/${productId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                withCredentials: true
-            });
-
-            if (response.data.success) {
-                const updatedItems = cartItems.filter(item => item.id !== productId);
-                setCartItems(updatedItems);
-                calculateTotals(updatedItems);
-                toast.success('Item removed from cart');
-            }
-        } catch (error) {
+            // Revert on error
+            fetchCartItems();
             toast.error(error.response?.data?.message || 'Error removing item');
+            console.error('Remove item error:', error);
         }
     };
 
@@ -105,21 +116,25 @@ function Cart() {
         fetchCartItems();
     }, []);
 
-    const handleesewaClick = (amount) => {
+    const handleEsewaClick = (amount) => {
+        if (!amount || isNaN(amount)) {
+            toast.error('Invalid payment amount');
+            return;
+        }
         initiateEsewaPayment(amount, 2736);
-        console.log("paymeny sucessfull throught khalti", amount);
-        
+
         setShowPaymentPopup(false);
-        redirect('/paymentsucess')
+        redirect('/paymentsuccess');
     };
+
     const handleKhaltiClick = (amount) => {
+        if (!amount || isNaN(amount)) {
+            toast.error('Invalid payment amount');
+            return;
+        }
         initiateKhaltiPayment(amount, 5678);
-        console.log("paymeny sucessfull throught khalti", amount);
-        
         setShowPaymentPopup(false);
     };
-
-
 
     if (loading) {
         return <Loading />;
@@ -127,7 +142,7 @@ function Cart() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <ToastContainer position="top-right " autoClose={3000} />
+            <ToastContainer position="top-right" autoClose={3000} />
             <div className="max-w-7xl mx-auto">
                 {/* Payment Popup */}
                 {showPaymentPopup && (
@@ -135,7 +150,7 @@ function Cart() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                     >
                         <motion.div
                             initial={{ scale: 0.95, y: 20 }}
@@ -147,7 +162,8 @@ function Cart() {
                                 <h3 className="text-xl font-semibold text-gray-800">Complete Your Payment</h3>
                                 <button
                                     onClick={() => setShowPaymentPopup(false)}
-                                    className="text-gray-400 cursor-pointer hover:text-red-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+                                    className="text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+                                    aria-label="Close payment popup"
                                 >
                                     <FaTimes className="w-5 h-5" />
                                 </button>
@@ -156,25 +172,41 @@ function Cart() {
                             <div className="p-5">
                                 <div className="flex border-b border-gray-100">
                                     <button
-                                        className={`flex-1 cursor-pointer py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'esewa'
+                                        className={`flex-1 py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'esewa'
                                             ? 'text-orange-600 border-b-2 border-orange-600 font-semibold'
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
                                         onClick={() => setActiveTab('esewa')}
                                     >
-                                        <span className="flex cursor-pointer items-center justify-center gap-2">
-                                            <img src="https://www.drupal.org/files/project-images/esewa.png" alt="eSewa" className="h-10" />
+                                        <span className="flex items-center justify-center gap-2">
+                                            <img
+                                                src="https://www.drupal.org/files/project-images/esewa.png"
+                                                alt="eSewa"
+                                                className="h-10"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://via.placeholder.com/150x60?text=eSewa';
+                                                }}
+                                            />
                                         </span>
                                     </button>
                                     <button
-                                        className={`flex-1 py-3 cursor-pointer px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'khalti'
+                                        className={`flex-1 py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'khalti'
                                             ? 'text-purple-600 border-b-2 border-purple-600 font-semibold'
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
                                         onClick={() => setActiveTab('khalti')}
                                     >
-                                        <span className="flex cursor-pointer items-center justify-center gap-2">
-                                            <img src="https://cdn.selldone.com/app/contents/community/posts/images/CleanShot20221017at1413242xpng46cc84efd2abd15fcbd79171f835be14.png" alt="Khalti" className="h-5" />
+                                        <span className="flex items-center justify-center gap-2">
+                                            <img
+                                                src="https://cdn.selldone.com/app/contents/community/posts/images/CleanShot20221017at1413242xpng46cc84efd2abd15fcbd79171f835be14.png"
+                                                alt="Khalti"
+                                                className="h-5"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://via.placeholder.com/150x60?text=Khalti';
+                                                }}
+                                            />
                                         </span>
                                     </button>
                                 </div>
@@ -203,12 +235,12 @@ function Cart() {
                                             <div className="pt-2">
                                                 <p className="text-gray-500 text-sm mb-4">
                                                     You'll be redirected to eSewa to complete your payment of
-                                                    <span className="font-bold text-gray-700"> रु.   {total}</span>
+                                                    <span className="font-bold text-gray-700"> रु. {total}</span>
                                                 </p>
                                                 <button
-                                                    onClick={() => handleesewaClick(total)}
-                                                    className="w-full cursor-pointer bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                                    >
+                                                    onClick={() => handleEsewaClick(total)}
+                                                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                                >
                                                     <FaLock className="text-sm" />
                                                     Pay with eSewa
                                                 </button>
@@ -237,13 +269,12 @@ function Cart() {
                                             <div className="pt-2">
                                                 <p className="text-gray-500 text-sm mb-4">
                                                     You'll be redirected to Khalti to complete your payment of
-                                                    <span className="font-bold text-gray-700"> रु.   {total}</span>
+                                                    <span className="font-bold text-gray-700"> रु. {total}</span>
                                                 </p>
                                                 <button
-                                                    
                                                     onClick={() => handleKhaltiClick(total)}
-                                                    className="w-full cursor-pointer bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                                    >
+                                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                                >
                                                     <FaShieldAlt className="text-sm" />
                                                     Pay with Khalti
                                                 </button>
@@ -261,7 +292,6 @@ function Cart() {
                         </motion.div>
                     </motion.div>
                 )}
-
 
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -305,7 +335,7 @@ function Cart() {
                                 <ul className="divide-y divide-gray-200">
                                     {cartItems.map((item) => (
                                         <motion.li
-                                            key={item.id}
+                                            key={item.product_id}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ duration: 0.3 }}
@@ -315,8 +345,8 @@ function Cart() {
                                                 <div className="flex-shrink-0">
                                                     <img
                                                         className="h-24 w-24 rounded-md object-cover"
-                                                        src={item.image || 'https://via.placeholder.com/150'}
-                                                        alt={item.name || 'Product image'}
+                                                        src={item.image}
+                                                        alt={item.name}
                                                     />
                                                 </div>
                                                 <div className="mt-4 sm:mt-0 sm:ml-6 flex-1">
@@ -330,28 +360,31 @@ function Cart() {
                                                             </p>
                                                         </div>
                                                         <p className="text-lg font-medium text-gray-900">
-                                                            रु. {(parseFloat(item.price) * item.quantity)}
+                                                            रु. {(item.price * item.quantity).toFixed(2)}
                                                         </p>
                                                     </div>
                                                     <div className="mt-4 flex items-center justify-between">
                                                         <div className="flex items-center">
                                                             <button
                                                                 onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                                                                className="p-1 rounded-md text-gray-400 hover:text-orange-500 hover:bg-gray-100"
+                                                                className="p-1 rounded-md cursor-pointer text-gray-400 hover:text-orange-500 hover:bg-gray-100"
+                                                                aria-label="Decrease quantity"
                                                             >
                                                                 <FaMinus className="h-4 w-4" />
                                                             </button>
                                                             <span className="mx-2 text-gray-700">{item.quantity}</span>
                                                             <button
                                                                 onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                                                                className="p-1 rounded-md text-gray-400 hover:text-orange-500 hover:bg-gray-100"
+                                                                className="p-1 rounded-md text-gray-400 cursor-pointer hover:text-orange-500 hover:bg-gray-100"
+                                                                aria-label="Increase quantity"
                                                             >
                                                                 <FaPlus className="h-4 w-4" />
                                                             </button>
                                                         </div>
                                                         <button
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="text-red-500 hover:text-red-700"
+                                                            onClick={() => removeItem(item.product_id)}
+                                                            className="text-red-500 cursor-pointer hover:text-red-700"
+                                                            aria-label="Remove item"
                                                         >
                                                             <FaTrash />
                                                         </button>
@@ -376,15 +409,15 @@ function Cart() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Subtotal</span>
-                                        <span className="font-medium">रु.  {subtotal}</span>
+                                        <span className="font-medium">रु. {subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Shipping</span>
-                                        <span className="font-medium">रु.  {shipping}</span>
+                                        <span className="font-medium">रु. {shipping.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t border-gray-200 pt-4 flex justify-between">
                                         <span className="text-lg font-medium">Total</span>
-                                        <span className="text-lg font-bold">रु.  {total}</span>
+                                        <span className="text-lg font-bold">रु. {total.toFixed(2)}</span>
                                     </div>
                                 </div>
                                 <div className="mt-6">

@@ -8,43 +8,62 @@ use Ramsey\Uuid\Uuid;
 
 class CartController
 {
+    private $pdo;
+
+    public function __construct($pdo)
+    {
+        $this->pdo = $pdo;
+    }
+
+
     public function addToCart()
     {
         $data = json_decode(file_get_contents("php://input"), true);
-        $user_id = $data['user_id'] ?? null;
+        $user_id = $_SESSION['user_id'] ?? 1;
         $product_id = $data['product_id'] ?? null;
         $quantity = $data['quantity'] ?? 1;
 
         if (!$user_id || !$product_id) {
             http_response_code(400);
-            echo json_encode(['message' => 'Missing required fields.']);
+            echo json_encode(['status' => 'error', 'message' => 'Missing required fields.']);
             return;
         }
 
         try {
             global $pdo;
 
-            $checkStmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ? AND product_id = ?");
-            $checkStmt->execute([$user_id, $product_id]);
-            $existing = $checkStmt->fetch();
+            // Check if item already exists in cart
+            $stmt = $pdo->prepare("SELECT 1 FROM cart WHERE user_id = ? AND product_id = ?");
+            $stmt->execute([$user_id, $product_id]);
 
-            if ($existing) {
+            if ($stmt->fetch()) {
                 http_response_code(200);
-                echo json_encode(['message' => 'Product already in cart']);
+                echo json_encode(['status' => 'info', 'message' => 'Product already in cart']);
                 return;
             }
 
+            // Insert new item
             $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
-            $stmt = $pdo->prepare("INSERT INTO cart (id, user_id, product_id, quantity) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$id, $user_id, $product_id, $quantity]);
+            $insert = $pdo->prepare("INSERT INTO cart (id, user_id, product_id, quantity) VALUES (?, ?, ?, ?)");
+            $insert->execute([$id, $user_id, $product_id, $quantity]);
 
             http_response_code(201);
-            echo json_encode(['message' => 'Item added to cart']);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Item added to cart',
+                'data' => [
+                    'id' => $id,
+                    'user_id' => $user_id,
+                    'product_id' => $product_id,
+                    'quantity' => $quantity
+                ]
+            ]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['status' => 'error', 'message' => 'Server error', 'details' => $e->getMessage()]);
         }
     }
+
     public function GetCartItem()
     {
         session_start(); // Ensure session is started
@@ -107,45 +126,128 @@ class CartController
 
     public function updateCartQuantity($productId)
     {
-        // Get user_id from session (or decode from token if you're using JWT)
+        header('Content-Type: application/json');
+
+        // Get logged-in user ID from session
         $user_id = $_SESSION['user_id'] ?? null;
 
         if (!$user_id) {
             http_response_code(401);
-            echo json_encode(['message' => 'Unauthorized: User not logged in']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized. Please log in.'
+            ]);
             return;
         }
 
-        // Read request body
+        // Parse request body
         $data = json_decode(file_get_contents("php://input"), true);
-        $quantity = $data['quantity'] ?? null;
+        $quantity = isset($data['quantity']) ? intval($data['quantity']) : null;
 
-        if (!$quantity || !is_numeric($quantity) || $quantity < 1) {
+        if (!$quantity || $quantity < 1) {
             http_response_code(400);
-            echo json_encode(['message' => 'Invalid quantity']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid quantity. Must be a number greater than 0.'
+            ]);
             return;
         }
 
         try {
             global $pdo;
 
-            // Prepare and execute update query
-            $stmt = $pdo->prepare("UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?");
+            // Update quantity in cart
+            $stmt = $pdo->prepare("UPDATE cart SET quantity = ?, update_at = NOW() WHERE user_id = ? AND product_id = ?");
             $stmt->execute([$quantity, $user_id, $productId]);
 
             if ($stmt->rowCount() > 0) {
                 http_response_code(200);
-                echo json_encode(['success' => true, 'message' => 'Cart item updated successfully']);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Cart item updated successfully',
+                    'data' => [
+                        'product_id' => $productId,
+                        'quantity' => $quantity
+                    ]
+                ]);
             } else {
-                // No row was affected — likely wrong user_id or product_id
                 http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Cart item not found or already updated']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Cart item not found or quantity unchanged'
+                ]);
             }
+
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error occurred',
+                'error' => $e->getMessage()
+            ]);
         }
     }
+
+
+    public function DeleteCartItem($product_id)
+    {
+        header('Content-Type: application/json');
+
+        $user_id = $_SESSION['user_id'] ?? null;
+
+        if (!$user_id || !$product_id) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Missing user or product ID.'
+            ]);
+            return;
+        }
+
+        try {
+            global $pdo;
+
+            // Check if item exists
+            $checkStmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ? AND product_id = ?");
+            $checkStmt->execute([$user_id, $product_id]);
+
+            if (!$checkStmt->fetch()) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Item not found in cart.'
+                ]);
+                return;
+            }
+
+            // Delete item
+            $deleteStmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ?");
+            $deleteStmt->execute([$user_id, $product_id]);
+
+            if ($deleteStmt->rowCount() > 0) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Item successfully removed from cart.'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to delete item from cart.'
+                ]);
+            }
+
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error.',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 
 
 
@@ -159,74 +261,142 @@ class OrderController
 
     public function __construct($db)
     {
-        $this->pdo = $db;
+        $this->pdo = $db;  // Assign the PDO instance here
     }
 
-    public function createOrder(array $orderItems)
+    public function createOrder()
     {
-        $now = date('Y-m-d H:i:s');
+        session_start();
 
-        $this->pdo->beginTransaction();
-
-        try {
-            $stmt = $this->pdo->prepare("
-            INSERT INTO orders 
-            (id, user_id, product_id, quantity, payment_status, order_status, createdAt, updatedAt, address)
-            VALUES 
-            (:id, :user_id, :product_id, :quantity, :payment_status, :order_status, :createdAt, :updatedAt, :address)
-        ");
-
-            foreach ($orderItems as $data) {
-                if (empty($data['user_id']) || empty($data['product_id']) || empty($data['quantity'])) {
-                    $this->pdo->rollBack();
-                    return [
-                        'success' => false,
-                        'message' => 'Missing required order data for one or more items',
-                    ];
-                }
-
-                $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
-                $user_id = $data['user_id'];
-                $product_id = $data['product_id'];
-                $quantity = $data['quantity'];
-                $payment_status = 'complete';
-                $order_status = 'pending';
-                $address = null;
-
-                $stmt->bindParam(':id', $id);
-                $stmt->bindParam(':user_id', $user_id);
-                $stmt->bindParam(':product_id', $product_id);
-                $stmt->bindParam(':quantity', $quantity);
-                $stmt->bindParam(':payment_status', $payment_status);
-                $stmt->bindParam(':order_status', $order_status);
-                $stmt->bindParam(':createdAt', $now);
-                $stmt->bindParam(':updatedAt', $now);
-                $stmt->bindParam(':address', $address);
-
-                $stmt->execute();
-            }
-
-            $this->pdo->commit();
-
-            return [
-                'success' => true,
-                'message' => 'All orders created successfully',
-                'data' => $orderItems,
-            ];
-
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            return [
-                'success' => false,
-                'message' => 'Error creating orders: ' . $e->getMessage(),
-            ];
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input) {
+            return ['error' => 'Invalid input'];
         }
+
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            return ['error' => 'User not logged in'];
+        }
+
+        $paymentStatus = $input['payment_status'] ?? 'pending';
+        $orderStatus = $input['order_status'] ?? 'pending';
+        $address = $input['address'] ?? '';
+
+        // 1. Get cart items for the user
+        $cartItems = $this->getCartItemsByUser($userId);
+        if (empty($cartItems)) {
+            return ['error' => 'Cart is empty'];
+        }
+
+        // 2. Calculate total price from cart items
+        $totalPrice = 0;
+        foreach ($cartItems as $item) {
+            $totalPrice += $item['price'] * $item['quantity'];
+        }
+
+        // 3. Verify payment amount from frontend matches calculated total price
+        $paymentAmount = $input['payment_amount'] ?? 0;
+        if ($paymentAmount != $totalPrice) {
+            return ['error' => 'Payment amount mismatch'];
+        }
+
+        // 4. Create order record
+        $orderId = $this->createOrderRecord([
+            'id' => $this->generateUUID(),
+            'user_id' => $userId,
+            'quantity' => array_sum(array_column($cartItems, 'quantity')),
+            'payment_status' => $paymentStatus,
+            'order_status' => $orderStatus,
+            'address' => $address,
+            'total_price' => $totalPrice,
+        ]);
+
+        if (!$orderId) {
+            return ['error' => 'Order creation failed'];
+        }
+
+        // 5. (Optional) Insert order items if you have order_items table
+        // foreach ($cartItems as $item) {
+        //     $this->createOrderItem($orderId, $item);
+        // }
+
+        // 6. Delete cart items for the user
+        $this->deleteCartItemsByUser($userId);
+
+        return ['success' => true, 'order_id' => $orderId];
     }
 
+    public function getCartItemsByUser($userId)
+    {
+        $sql = "SELECT product_id, quantity, price FROM cart WHERE user_id = :user_id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
+    public function createOrderRecord($orderData)
+    {
+        $sql = "INSERT INTO orders (id, user_id, quantity, payment_status, order_status, address)
+                VALUES (:id, :user_id, :quantity, :payment_status, :order_status, :address)";
+        $stmt = $this->pdo->prepare($sql);
+        $success = $stmt->execute([
+            ':id' => $orderData['id'],
+            ':user_id' => $orderData['user_id'],
+            ':quantity' => $orderData['quantity'],
+            ':payment_status' => $orderData['payment_status'],
+            ':order_status' => $orderData['order_status'],
+            ':address' => $orderData['address'],
+        ]);
+        return $success ? $orderData['id'] : false;
+    }
 
+    public function deleteCartItemsByUser($userId)
+    {
+        $sql = "DELETE FROM cart WHERE user_id = :user_id";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute(['user_id' => $userId]);
+    }
+
+    public function generateUUID()
+    {
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    public function GetOrderItem()
+{
+    try {
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM orders");
+        $stmt->execute();
+
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($orders)) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'No orders found']);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode(['success' => true, 'data' => $orders]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error',
+            'error' => $e->getMessage()
+        ]);
+    }
+}
 
 }
+
+
+
+
 
 
 

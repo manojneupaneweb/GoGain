@@ -16,13 +16,21 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 try {
     // Protected product routes 🔐
-    if ($method === 'POST' && preg_match('/\/addtocart\/?$/', $uri)) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('/\/addtocart\/?$/', $_SERVER['REQUEST_URI'])) {
+        checkAuth();
         $cartController->addToCart();
+
     } elseif ($method === 'GET' && preg_match('/\/getcartitem\/?$/', $uri)) {
         checkAuth();
         $cartController->GetCartItem();
-    } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT' && preg_match('/\/cart\/(\w+)/', $uri, $matches)) {
-        checkAuth(); // Your auth middleware
+
+    } elseif ($method === 'DELETE' && preg_match('/\/cart\/delete\/([a-zA-Z0-9\-]+)\/?$/', $uri, $matches)) {
+        checkAuth();
+        $productId = $matches[1];
+        $cartController->DeleteCartItem($productId);
+
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT' && preg_match('/\/cart\/([a-zA-Z0-9\-]+)/', $uri, $matches)) {
+        checkAuth();
         $productId = $matches[1];
         $cartController->updateCartQuantity($productId);
     }
@@ -30,14 +38,21 @@ try {
 
 
 
-    //order routes
+
+
+    //--------------------------- order routes -------------------------------------
     elseif ($method === 'POST' && preg_match('/\/createorder\/?$/', $uri)) {
-        require_once __DIR__ . '/../middleware/auth.middleware.php';
         checkAuth();
         header('Content-Type: application/json');
-        echo json_encode($orderController->createOrder(json_decode(file_get_contents('php://input'), true)));
+        echo json_encode($orderController->createOrder());
         exit;
+    } elseif ($method === 'GET' && preg_match('/\/getorderitem\/?$/', $uri)) {
+        checkAuth();
+        $orderController->GetOrderItem();
     }
+
+
+
 
 
     //plan route 

@@ -48,6 +48,7 @@ import UserPermission from "./Pages/Admin/Settings/UserPermission.jsx";
 import CancelOrders from "./Pages/Admin/Orders/CancelOrders.jsx";
 import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
 import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
+import ContactFormMessage from "./Pages/Admin/contactFormMessage.jsx";
 
 
 
@@ -173,6 +174,11 @@ const router = createBrowserRouter([
             //settings
             { path: "settings/security", element: < Security />, },
             { path: "settings/userpermission", element: < UserPermission />, },
+            
+            
+            // contact form message
+            { path: "contactformmessage", element: < ContactFormMessage />, },
+           
 
 
 

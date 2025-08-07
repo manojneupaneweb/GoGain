@@ -12,6 +12,7 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   Bars3Icon,
+  InboxIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
@@ -49,7 +50,7 @@ export default function AdminLayout() {
       setUser(null);
     }
   };
-  
+
   useEffect(() => {
     fetchUser();
   }, [token]);
@@ -121,10 +122,15 @@ export default function AdminLayout() {
       path: '/admin/analytics',
     },
     {
+      name: 'Contact Form Message',
+      icon: InboxIcon,
+      path: '/admin/contactformmessage',
+    },
+
+    {
       name: 'Settings',
       icon: CogIcon,
       submenu: [
-        { name: 'Account', path: '/admin/settings/account' },
         { name: 'Security', path: '/admin/settings/security' },
         { name: 'userpermission', path: '/admin/settings/userpermission' },
       ],
@@ -140,24 +146,21 @@ export default function AdminLayout() {
           <>
             <button
               onClick={() => toggleSubmenu(item.name)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 hover:bg-gray-700 ${
-                openSubmenus[item.name]
+              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 hover:bg-gray-700 ${openSubmenus[item.name]
                   ? 'bg-gray-700 text-white'
                   : 'text-gray-300'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-3">
-                <item.icon className={`h-5 w-5 ${
-                  openSubmenus[item.name]
+                <item.icon className={`h-5 w-5 ${openSubmenus[item.name]
                     ? 'text-white'
                     : 'text-gray-400'
-                }`} />
+                  }`} />
                 {sidebarOpen && (
-                  <span className={`${
-                    openSubmenus[item.name]
+                  <span className={`${openSubmenus[item.name]
                       ? 'font-medium'
                       : ''
-                  }`}>
+                    }`}>
                     {item.name}
                   </span>
                 )}
@@ -180,10 +183,9 @@ export default function AdminLayout() {
                     <NavLink
                       to={subItem.path}
                       className={({ isActive }) =>
-                        `block px-3 py-2 text-sm rounded-lg transition-all duration-300 hover:bg-gray-700 ${
-                          isActive
-                            ? 'bg-gray-700 text-white font-medium'
-                            : 'text-gray-300 hover:text-white'
+                        `block px-3 py-2 text-sm rounded-lg transition-all duration-300 hover:bg-gray-700 ${isActive
+                          ? 'bg-gray-700 text-white font-medium'
+                          : 'text-gray-300 hover:text-white'
                         }`
                       }
                     >
@@ -198,18 +200,16 @@ export default function AdminLayout() {
           <NavLink
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center p-3 rounded-xl transition-all duration-300 hover:bg-gray-700 ${
-                isActive
-                  ? 'bg-gray-700 text-white font-medium'
-                  : 'text-gray-300 hover:text-white'
+              `flex items-center p-3 rounded-xl transition-all duration-300 hover:bg-gray-700 ${isActive
+                ? 'bg-gray-700 text-white font-medium'
+                : 'text-gray-300 hover:text-white'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <item.icon className={`h-5 w-5 ${
-                  isActive ? 'text-white' : 'text-gray-400'
-                }`} />
+                <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400'
+                  }`} />
                 {sidebarOpen && <span className="ml-3">{item.name}</span>}
               </>
             )}
@@ -223,9 +223,8 @@ export default function AdminLayout() {
     <div className="flex h-screen bg-gray-900 text-gray-100">
       {/* Sidebar */}
       <aside
-        className={`bg-gray-800 text-gray-300 shadow-lg transition-all duration-300 ease-in-out fixed md:relative z-20 h-full ${
-          sidebarOpen ? 'w-64' : 'w-0 md:w-20'
-        }`}
+        className={`bg-gray-800 text-gray-300 shadow-lg transition-all duration-300 ease-in-out fixed md:relative z-20 h-full ${sidebarOpen ? 'w-64' : 'w-0 md:w-20'
+          }`}
       >
         <div className={`h-full flex flex-col ${sidebarOpen ? 'px-4' : 'px-2'}`}>
           {/* Sidebar header */}
@@ -280,9 +279,8 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Navbar */}
         <header
-          className={`bg-gray-800 sticky top-0 z-10 transition-all duration-300 ${
-            isScrolled ? 'shadow-lg' : 'shadow-sm'
-          }`}
+          className={`bg-gray-800 sticky top-0 z-10 transition-all duration-300 ${isScrolled ? 'shadow-lg' : 'shadow-sm'
+            }`}
         >
           <div className="flex items-center justify-between px-4 py-3">
             {/* Left side - Hamburger menu */}
@@ -319,9 +317,8 @@ export default function AdminLayout() {
                     />
                   </div>
                   <ChevronDownIcon
-                    className={`h-4 w-4 transition-all duration-300 text-gray-300 ${
-                      userDropdownOpen ? 'rotate-180' : ''
-                    }`}
+                    className={`h-4 w-4 transition-all duration-300 text-gray-300 ${userDropdownOpen ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
 

@@ -17,6 +17,9 @@ switch (true) {
     case str_starts_with($uri, "/api/v1/payment"):
         require_once __DIR__ . '/Payment.route.php';
         break;
+    case str_starts_with($uri, "/api/v1/admin"):
+        require_once __DIR__ . '/Admin.route.php';
+        break;
 
     default:
         http_response_code(404);

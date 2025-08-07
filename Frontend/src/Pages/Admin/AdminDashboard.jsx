@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +13,7 @@ import {
   LineElement
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
-import { FiUsers, FiShoppingCart, FiDollarSign, FiActivity } from 'react-icons/fi';
+import { FiUsers, FiShoppingCart, FiDollarSign, FiPackage, FiTruck, FiCheck, FiX } from 'react-icons/fi';
 
 // Register ChartJS components
 ChartJS.register(
@@ -28,72 +29,127 @@ ChartJS.register(
 );
 
 function AdminDashboard() {
-  // Sample data for charts
-  const salesData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-    datasets: [
-      {
-        label: 'Sales 2023',
-        data: [65, 59, 80, 81, 56, 55, 40],
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Sales 2022',
-        data: [28, 48, 40, 19, 86, 27, 90],
-        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-        borderColor: 'rgba(255, 99, 132, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const revenueData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: [12000, 19000, 3000, 5000, 2000, 3000, 45000],
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-        borderColor: 'rgba(75, 192, 192, 1)',
-        tension: 0.1,
-      },
-    ],
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await axios.get('/api/v1/admin/dashboard', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
 
-  const customerData = {
-    labels: ['New', 'Returning', 'Inactive'],
+        if (response.data.success) {
+          setDashboardData(response.data.data);
+        } else {
+          setError(response.data.message || 'Failed to load dashboard data');
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center p-6 max-w-md">
+          <h3 className="text-lg font-medium text-gray-100 mb-2">Error loading dashboard</h3>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate total sales from completed orders
+  const totalSales = dashboardData?.order_status_counts?.completed_orders || 0;
+
+  // Prepare chart data from API response
+  const orderStatusData = {
+    labels: ['Pending', 'Shipping', 'Completed', 'Cancelled'],
     datasets: [
       {
-        data: [300, 150, 50],
+        data: [
+          parseInt(dashboardData?.order_status_counts?.pending_orders) || 0,
+          parseInt(dashboardData?.order_status_counts?.shipping_orders) || 0,
+          parseInt(dashboardData?.order_status_counts?.completed_orders) || 0,
+          parseInt(dashboardData?.order_status_counts?.cancelled_orders) || 0
+        ],
         backgroundColor: [
-          'rgba(255, 99, 132, 0.6)',
-          'rgba(54, 162, 235, 0.6)',
           'rgba(255, 206, 86, 0.6)',
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(255, 99, 132, 0.6)'
         ],
         borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
           'rgba(255, 206, 86, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(255, 99, 132, 1)'
         ],
         borderWidth: 1,
       },
     ],
   };
 
-  // Stats cards data
+  // Stats cards data from API
   const stats = [
-    { title: 'Total Users', value: '2,453', icon: <FiUsers size={24} />, change: '+12%', trend: 'up' },
-    { title: 'Total Sales', value: '$34,543', icon: <FiShoppingCart size={24} />, change: '+8%', trend: 'up' },
-    { title: 'Revenue', value: '$45,231', icon: <FiDollarSign size={24} />, change: '+23%', trend: 'up' },
-    { title: 'Active Products', value: '342', icon: <FiActivity size={24} />, change: '-3%', trend: 'down' },
+    {
+      title: 'Total Users',
+      value: dashboardData?.total_users || 0,
+      icon: <FiUsers size={24} />,
+      change: '+0%',
+      trend: 'neutral'
+    },
+    {
+      title: 'Total Products',
+      value: dashboardData?.total_products || 0,
+      icon: <FiPackage size={24} />,
+      change: '+0%',
+      trend: 'neutral'
+    },
+    {
+      title: 'Total Sales',
+      value: totalSales,
+      icon: <FiShoppingCart size={24} />,
+      change: '+0%',
+      trend: 'neutral'
+    },
+    {
+      title: 'Total Revenue',
+      value: `$${dashboardData?.total_revenue?.toLocaleString() || 0}`,
+      icon: <FiDollarSign size={24} />,
+      change: '+0%',
+      trend: 'neutral'
+    },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 bg-gray-900 min-h-screen">
       <h1 className="text-2xl font-bold text-gray-100">Dashboard Overview</h1>
-      
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
@@ -102,7 +158,9 @@ function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-400">{stat.title}</p>
                 <p className="text-2xl font-bold text-gray-100 mt-1">{stat.value}</p>
-                <p className={`text-sm mt-2 ${stat.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                <p className={`text-sm mt-2 ${stat.trend === 'up' ? 'text-green-400' :
+                    stat.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                  }`}>
                   {stat.change} from last month
                 </p>
               </div>
@@ -115,148 +173,108 @@ function AdminDashboard() {
       </div>
 
       {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Chart */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-100 mb-4">Sales Comparison</h2>
-          <Bar 
-            data={salesData} 
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'top',
-                  labels: {
-                    color: '#f3f4f6'
-                  }
-                },
-              },
-              scales: {
-                x: {
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#f3f4f6'
-                  }
-                },
-                y: {
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#f3f4f6'
-                  }
-                }
+      <div className="grid grid-cols-auto w-32 ">
+        {/* Order Status Chart */}
+        <div className="bg-gray-800 p-3 rounded-lg shadow">
+      <h2 className="text-lg font-semibold text-gray-100 mb-4">Order Status Distribution</h2>
+      <Pie
+        data={orderStatusData}
+        options={{
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#f3f4f6'
               }
-            }}
-          />
-        </div>
+            },
+          },
+        }}
+      />
+    </div>
 
-        {/* Revenue Chart */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-100 mb-4">Revenue Trend</h2>
-          <Line 
-            data={revenueData} 
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  labels: {
-                    color: '#f3f4f6'
-                  }
-                },
-              },
-              scales: {
-                x: {
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#f3f4f6'
-                  }
-                },
-                y: {
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: '#f3f4f6'
-                  }
-                }
-              }
-            }}
-          />
-        </div>
-      </div>
+        {/* Empty Chart Placeholder */ }
+  <div className="bg-gray-800 p-6 rounded-lg shadow flex items-center justify-center">
+    <div className="text-center text-gray-400">
+      <FiTruck className="mx-auto h-12 w-12 mb-4" />
+      <p>Additional data visualization will appear here</p>
+    </div>
+  </div>
+      </div >
 
-      {/* Secondary Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer Distribution */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-100 mb-4">Customer Distribution</h2>
-          <div className="h-64">
-            <Pie 
-              data={customerData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'right',
-                    labels: {
-                      color: '#f3f4f6'
-                    }
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-100 mb-4">Recent Orders</h2>
-          <div className="overflow-x-auto">
+    {/* Recent Orders */ }
+    < div className = "bg-gray-800 p-6 rounded-lg shadow" >
+        <h2 className="text-lg font-semibold text-gray-100 mb-4">Recent Orders</h2>
+        <div className="overflow-x-auto">
+          {dashboardData?.recent_orders?.length > 0 ? (
             <table className="min-w-full divide-y divide-gray-700">
               <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Order ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Customer</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {[
-                  { id: '#ORD-0001', customer: 'John Doe', status: 'Completed', amount: '$120.00' },
-                  { id: '#ORD-0002', customer: 'Jane Smith', status: 'Processing', amount: '$85.50' },
-                  { id: '#ORD-0003', customer: 'Robert Johnson', status: 'Shipped', amount: '$230.75' },
-                  { id: '#ORD-0004', customer: 'Emily Davis', status: 'Pending', amount: '$65.99' },
-                  { id: '#ORD-0005', customer: 'Michael Wilson', status: 'Completed', amount: '$154.20' },
-                ].map((order, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-400">{order.id}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{order.customer}</td>
+                {dashboardData.recent_orders.map((order) => (
+                  <tr key={order.id}>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-400">#{order.id.substring(0, 8)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        order.status === 'Completed' ? 'bg-green-900 text-green-300' :
-                        order.status === 'Processing' ? 'bg-yellow-900 text-yellow-300' :
-                        order.status === 'Shipped' ? 'bg-blue-900 text-blue-300' :
+                        order.order_status === 'completed' ? 'bg-green-900 text-green-300' :
+                        order.order_status === 'shipping' ? 'bg-blue-900 text-blue-300' :
+                        order.order_status === 'pending' ? 'bg-yellow-900 text-yellow-300' :
                         'bg-gray-700 text-gray-300'
                       }`}>
-                        {order.status}
+                        {order.order_status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{order.amount}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                      ${order.total_amount || '0.00'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <FiPackage className="mx-auto h-12 w-12 mb-4" />
+              <p>No recent orders found</p>
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      </div >
+
+    {/* Top Products */ }
+    < div className = "bg-gray-800 p-6 rounded-lg shadow" >
+        <h2 className="text-lg font-semibold text-gray-100 mb-4">Top Products</h2>
+        <div className="overflow-x-auto">
+          {dashboardData?.top_products?.length > 0 ? (
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Product</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Units Sold</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {dashboardData.top_products.map((product) => (
+                  <tr key={product.id}>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{product.name || 'Unknown Product'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{product.total_sold || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <FiShoppingCart className="mx-auto h-12 w-12 mb-4" />
+              <p>No product sales data available</p>
+            </div>
+          )}
+        </div>
+      </div >
+    </div >
   );
 }
 

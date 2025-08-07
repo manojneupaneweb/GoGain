@@ -469,6 +469,34 @@ class UserController
         }
     }
 
+    public function getcontactform()
+    {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Only GET requests are allowed.']);
+            return;
+        }
+
+        try {
+            $stmt = $this->pdo->query("SELECT * FROM contact_messages ORDER BY created_at DESC");
+            $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $messages
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'An error occurred while fetching messages.',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 
 
 

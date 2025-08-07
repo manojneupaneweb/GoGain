@@ -6,7 +6,7 @@ require_once __DIR__ . '/../middleware/admin.middleware.php';
 
 header('Content-Type: application/json');
 
-$pdo = $pdo; // assuming db.php returns $pdo
+$pdo = $pdo; 
 $productController = new ProductController($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
