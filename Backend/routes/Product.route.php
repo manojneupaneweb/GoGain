@@ -6,7 +6,7 @@ require_once __DIR__ . '/../middleware/admin.middleware.php';
 
 header('Content-Type: application/json');
 
-$pdo = $pdo; 
+$pdo = $pdo;
 $productController = new ProductController($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -22,10 +22,20 @@ try {
     } elseif ($method === 'GET' && preg_match('/\/api\/v1\/product\/([\w-]+)/', $uri, $matches)) {
         $id = $matches[1];
         $productController->getProductByID($id);
+    } elseif ($method === 'DELETE' && preg_match('/\/product\/deleteproduct\/([a-zA-Z0-9-]+)/', $uri, $matches)) {
+        checkAdminAuth();
+        $productId = $matches[1];
+        $productController->deleteProduct($productId);
+    } elseif ($method === 'PUT' && preg_match('/\/updateproduct\/(.+)/', $uri, $matches)) {
+        checkAdminAuth(); // Optional: Only allow admins
+        $productId = $matches[1];
+        $productController->updateProduct($productId);
     }
 
-    // Cart routes
 
+
+
+    // Cart routes
     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);

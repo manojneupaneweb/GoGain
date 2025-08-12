@@ -185,6 +185,69 @@ class ProductController
         }
     }
 
+    public function deleteProduct($id)
+    {
+        global $pdo;
+
+        try {
+            $stmt = $pdo->prepare("DELETE FROM products WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+
+            if ($stmt->rowCount()) {
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Product deleted successfully"
+                ]);
+            } else {
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Product not found"
+                ]);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Database error",
+                "error" => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function updateProduct($productId)
+{
+    global $pdo;
+
+    parse_str(file_get_contents("php://input"), $_PUT);
+
+    $name = $_POST['name'] ?? null;
+    $description = $_POST['description'] ?? null;
+    $price = $_POST['price'] ?? null;
+    $stock = $_POST['stock'] ?? null;
+    $category = $_POST['category'] ?? null;
+
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+        $imageName = uniqid() . "_" . $_FILES['image']['name'];
+        move_uploaded_file($_FILES['image']['tmp_name'], "../uploads/" . $imageName);
+        $imagePath = "/uploads/" . $imageName;
+    } else {
+        // Optional: handle missing image or retain existing
+        $stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+        $stmt->execute([$productId]);
+        $imagePath = $stmt->fetchColumn();
+    }
+
+    $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, image = ? WHERE id = ?");
+    $success = $stmt->execute([$name, $description, $price, $stock, $category, $imagePath, $productId]);
+
+    if ($success) {
+        echo json_encode(['success' => true, 'message' => 'Product updated successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update product']);
+    }
+}
+
+
+
 
 
 

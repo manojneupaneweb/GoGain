@@ -16,7 +16,7 @@
     "chart.js": "^4.4.9",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
-    "framer-motion": "^12.16.0",
+    "framer-motion": "^12.23.12",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.511.0",
     "motion": "^12.16.0",

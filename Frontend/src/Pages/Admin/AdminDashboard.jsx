@@ -13,7 +13,7 @@ import {
   LineElement
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
-import { FiUsers, FiShoppingCart, FiDollarSign, FiPackage, FiTruck, FiCheck, FiX } from 'react-icons/fi';
+import { FiUsers, FiShoppingCart, FiDollarSign, FiPackage, FiTruck, FiCheck, FiX, FiXCircle, FiClock } from 'react-icons/fi';
 
 // Register ChartJS components
 ChartJS.register(
@@ -85,6 +85,11 @@ function AdminDashboard() {
 
   // Calculate total sales from completed orders
   const totalSales = dashboardData?.order_status_counts?.completed_orders || 0;
+  const pendingOrders = dashboardData?.order_status_counts?.pending_orders || 0;
+  const shippingOrders = dashboardData?.order_status_counts?.shipping_orders || 0;
+  const cancelledOrders = dashboardData?.order_status_counts?.cancelled_orders || 0;
+
+  
 
   // Prepare chart data from API response
   const orderStatusData = {
@@ -144,7 +149,28 @@ function AdminDashboard() {
       change: '+0%',
       trend: 'neutral'
     },
-  ];
+    {
+      title: 'Pending Orders',
+      value: pendingOrders,
+      icon: <FiClock size={24} />,  // Represents waiting/time
+      change: '+0%',
+      trend: 'neutral'
+    },
+    {
+      title: 'Shipping Orders',
+      value: shippingOrders,
+      icon: <FiTruck size={24} />,  // Represents delivery/shipping
+      change: '+0%',
+      trend: 'neutral'
+    },
+    {
+      title: 'Cancelled Orders',
+      value: cancelledOrders,
+      icon: <FiXCircle size={24} />,  // Represents cancellation
+      change: '+0%',
+      trend: 'neutral'
+    },
+];
 
   return (
     <div className="space-y-6 p-6 bg-gray-900 min-h-screen">

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { FiTruck, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const statusConfig = {
@@ -62,8 +62,6 @@ const ShippingOrders = () => {
         }
       });
 
-      console.log("Orders response:", response.data);
-
       if (response.data && Array.isArray(response.data.data)) {
         setOrders(response.data.data);
         setTotalPages(Math.ceil((response.data.total || 1) / limit));
@@ -102,12 +100,15 @@ const ShippingOrders = () => {
     setProcessing(false);
   };
 
-  const updateOrderStatus = async () => {
+  const changeOrderStatus = async () => {
     setProcessing(true);
     try {
-      await axios.patch(
-        `/api/v1/cart/updateorder/${currentOrder}`,
-        { status: newStatus },
+      await axios.post(
+        '/api/v1/admin/changestatus',
+        { 
+          orderId: currentOrder,
+          status: newStatus 
+        },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -116,16 +117,17 @@ const ShippingOrders = () => {
         }
       );
       
+      // Update local state
       setOrders(orders.map(order => 
         order.id === currentOrder ? { ...order, order_status: newStatus } : order
       ));
       
-      toast.success(`Order status updated to ${statusConfig[newStatus]?.label || newStatus}`);
+      toast.success(`Order status changed to ${statusConfig[newStatus]?.label || newStatus}`);
       closeConfirmation();
     } catch (error) {
-      console.error("Failed to update order:", error);
-      toast.error(error.response?.data?.message || "Failed to update order status");
-      closeConfirmation();
+      console.error("Failed to change order status:", error);
+      toast.error(error.response?.data?.message || "Failed to change order status");
+      setProcessing(false);
     }
   };
 
@@ -200,7 +202,7 @@ const ShippingOrders = () => {
                 Cancel
               </button>
               <button
-                onClick={updateOrderStatus}
+                onClick={changeOrderStatus}
                 disabled={processing}
                 className={`px-4 py-2 rounded-md text-white ${
                   newStatus === "completed"
@@ -305,7 +307,7 @@ const ShippingOrders = () => {
                             <button
                               key={action.status}
                               onClick={() => showConfirmation(order.id, action.status)}
-                              className={`px-2 py-1 text-xs rounded-md inline-flex items-center ${action.color}`}
+                              className={`px-2 py-1 text-xs rounded-md inline-flex items-center cursor-pointer ${action.color}`}
                             >
                               {action.icon}
                               {action.label}
@@ -363,6 +365,7 @@ const ShippingOrders = () => {
             </div>
           )}
         </motion.div>
+        <ToastContainer/>
       </div>
     </div>
   );

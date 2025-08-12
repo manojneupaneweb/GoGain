@@ -49,6 +49,7 @@ import CancelOrders from "./Pages/Admin/Orders/CancelOrders.jsx";
 import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
 import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
 import ContactFormMessage from "./Pages/Admin/contactFormMessage.jsx";
+import Constumers from "./Pages/Admin/Constumers.jsx";
 
 
 
@@ -61,6 +62,8 @@ import UpdateProduct from "./Pages/Admin/Product/UpdateProduct.jsx";
 import Cart from "./Pages/Users/Cart.jsx";
 import PaymentSuccess from "./Pages/paymentSuccess.jsx";
 import Services from "./Pages/Services.jsx";
+import Analytics from "./Pages/Admin/Analytics.jsx";
+import Reports from "./Pages/Admin/Reports.jsx";
 axios.defaults.baseURL = "http://localhost:3000";
 
 const router = createBrowserRouter([
@@ -170,6 +173,11 @@ const router = createBrowserRouter([
             { path: "orders/complete", element: < CompleteOrders />, },
             { path: "orders/cancel", element: < CancelOrders />, },
 
+            { path: "customers", element: < Constumers />, },
+            
+            { path: "analytics", element: < Analytics />, },
+            
+            { path: "reports", element: < Reports />, },
 
             //settings
             { path: "settings/security", element: < Security />, },

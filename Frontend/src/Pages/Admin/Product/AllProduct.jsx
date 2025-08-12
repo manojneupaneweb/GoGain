@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiEdit2, FiTrash2, FiPlus, FiSearch } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiRefreshCw } from 'react-icons/fi';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Loading from '../../../Component/Loading.jsx';
 
@@ -14,6 +14,7 @@ function AllProduct() {
   const productsPerPage = 8;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(false);
 
   // Fetch products from API
   useEffect(() => {
@@ -31,7 +32,6 @@ function AllProduct() {
           withCredentials: true
         });
 
-        // Updated to use response.data.data
         setProducts(response.data.data || []);
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to fetch products');
@@ -42,7 +42,7 @@ function AllProduct() {
     };
 
     fetchProducts();
-  }, []);
+  }, [refreshTrigger]);
 
   // Filter products based on search term
   const filteredProducts = products.filter(product =>
@@ -58,9 +58,7 @@ function AllProduct() {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Handle delete confirmation
   const confirmDelete = (product) => {
-    
     setProductToDelete(product);
     setShowDeleteModal(true);
   };
@@ -72,8 +70,13 @@ function AllProduct() {
       if (!token) {
         throw new Error('Authentication required. Please login.');
       }
+      if (productToDelete.id === undefined) {
+        throw new Error('Product ID is not defined. Please select a valid product.');
 
-      await axios.delete(`/api/v1/product/deleteproduct/${productToDelete._id}`, {
+      }
+console.log(`Deleting product with ID: ${productToDelete.id}`);
+
+      await axios.delete(`/api/v1/product/deleteproduct/${productToDelete.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -81,7 +84,11 @@ function AllProduct() {
       });
 
       toast.success(`${productToDelete.name} has been deleted successfully!`);
-      setProducts(products.filter(product => product._id !== productToDelete._id));
+
+      // Correctly filter out the deleted product
+      const updatedProducts = products.filter(product => product.id !== productToDelete.id);
+      setProducts(updatedProducts);
+
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to delete product');
     } finally {
@@ -94,6 +101,11 @@ function AllProduct() {
   const cancelDelete = () => {
     setShowDeleteModal(false);
     setProductToDelete(null);
+  };
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setRefreshTrigger(prev => !prev);
   };
 
   if (loading && products.length === 0) {
@@ -115,7 +127,7 @@ function AllProduct() {
     <div className="space-y-6">
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-       <div className="fixed inset-0 bg-black bg-opacity-100 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-100 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
             <h3 className="text-xl font-semibold text-gray-100 mb-4">Confirm Delete</h3>
             <p className="text-gray-300 mb-6">
@@ -139,6 +151,7 @@ function AllProduct() {
           </div>
         </div>
       )}
+      <ToastContainer />
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold text-gray-100">Product Management</h1>
@@ -155,17 +168,34 @@ function AllProduct() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg transition"
+            disabled={loading}
+          >
+            <FiRefreshCw className={loading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </button>
           <button className="flex cursor-pointer items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
             <FiPlus />
-            <span> <a href="/admin/add-product"> Add Product</a></span>
+            <span><a href="/admin/add-product">Add Product</a></span>
           </button>
         </div>
       </div>
 
       <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
-        {products.length === 0 ? (
+        {products.length == 0 ? (
           <div className="p-8 text-center">
             <p className="text-gray-400">No products found. Add a new product to get started.</p>
+            <div className="mt-4">
+              <a
+                href="/admin/add-product"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+              >
+                <FiPlus className="mr-2" />
+                Add New Product
+              </a>
+            </div>
           </div>
         ) : (
           <>
@@ -191,7 +221,7 @@ function AllProduct() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap flex items-center space-x-4 cursor-pointer">
-                        <div><img src={product.image}  className='w-7 rounded-md ' alt="" /></div>
+                        <div><img src={product.image} className='w-7 rounded-md' alt="" /></div>
                         <div className="text-sm font-medium text-gray-100">{product.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -5,7 +5,7 @@ require_once __DIR__ . '/../controllers/dashboard.controller.php';
 
 header('Content-Type: application/json');
 
-$pdo = $pdo; 
+$pdo = $pdo;
 $DashboardController = new DashboardController($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -16,22 +16,35 @@ try {
     if ($method === 'GET' && preg_match('/\/dashboard\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->GetDashboard();
-    } 
-    elseif ($method === 'GET' && preg_match('/\/getallusers\/?$/', $uri)) {
+    } elseif ($method === 'GET' && preg_match('/\/getallusers\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->getAllUsers();
-    } 
-    elseif ($method === 'POST' && preg_match('/\/changerole\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/changerole\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->ChangeRole();
     } elseif ($method === 'POST' && preg_match('/\/admin\/change-password\/?$/', $uri)) {
-    checkAdminAuth(); // middleware to ensure only admin can access
-    $DashboardController->ChangePassword();
-}
+        checkAdminAuth(); // middleware to ensure only admin can access
+        $DashboardController->ChangePassword();
+    }
+    // all role == user
+    elseif ($method === 'GET' && preg_match('/\/getalluserinformation\/?$/', $uri)) {
+        checkAdminAuth();
+        $DashboardController->getAllUserInformation();
+    }
 
 
-   
-
+    //products
+    elseif ($method === 'POST' && preg_match('/\/changestatus\/?$/', $uri)) {
+        checkAdminAuth(); 
+        $DashboardController->changeOrderStatus();
+    } 
+    
+    
+    
+    
+    
+    
+    
     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);

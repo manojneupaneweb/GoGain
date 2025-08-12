@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { FiPackage, FiTruck, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const statusConfig = {
@@ -73,8 +73,6 @@ const PendingOrders = () => {
         }
       });
 
-      console.log("Orders response:", response.data);
-
       if (response.data && Array.isArray(response.data.data)) {
         setOrders(response.data.data);
         setTotalPages(Math.ceil((response.data.total || 1) / limit));
@@ -113,12 +111,15 @@ const PendingOrders = () => {
     setProcessing(false);
   };
 
-  const updateOrderStatus = async () => {
+  const changeOrderStatus = async () => {
     setProcessing(true);
     try {
-      await axios.patch(
-        `/api/v1/cart/updateorder/${currentOrder}`,
-        { status: newStatus },
+      await axios.post(
+        '/api/v1/admin/changestatus',
+        { 
+          orderId: currentOrder,
+          status: newStatus 
+        },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -127,16 +128,17 @@ const PendingOrders = () => {
         }
       );
       
+      // Update local state
       setOrders(orders.map(order => 
         order.id === currentOrder ? { ...order, order_status: newStatus } : order
       ));
       
-      toast.success(`Order status updated to ${statusConfig[newStatus]?.label || newStatus}`);
+      toast.success(`Order status changed to ${statusConfig[newStatus]?.label || newStatus}`);
       closeConfirmation();
     } catch (error) {
-      console.error("Failed to update order:", error);
-      toast.error(error.response?.data?.message || "Failed to update order status");
-      closeConfirmation();
+      console.error("Failed to change order status:", error);
+      toast.error(error.response?.data?.message || "Failed to change order status");
+      setProcessing(false);
     }
   };
 
@@ -158,7 +160,7 @@ const PendingOrders = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen ">
+      <div className="flex items-center justify-center min-h-screen">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -184,8 +186,9 @@ const PendingOrders = () => {
   const pendingOrders = orders.filter(order => order.order_status === "pending");
 
   return (
-    <div className="min-h-screen  p-4 md:p-8">
+    <div className="min-h-screen p-4 md:p-8">
       {/* Confirmation Modal */}
+      <ToastContainer/>
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <motion.div
@@ -211,7 +214,7 @@ const PendingOrders = () => {
                 Cancel
               </button>
               <button
-                onClick={updateOrderStatus}
+                onClick={changeOrderStatus}
                 disabled={processing}
                 className={`px-4 py-2 rounded-md text-white ${
                   newStatus === "completed"
@@ -245,15 +248,15 @@ const PendingOrders = () => {
           transition={{ duration: 0.4 }}
           className="mb-8"
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-white-800">Pending Orders</h1>
-          <p className="text-white-600 mt-1">Manage orders awaiting processing</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pending Orders</h1>
+          <p className="text-gray-600 mt-1">Manage orders awaiting processing</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-white rounded-xl shadow-sm overflow-hidden"
+          className="bg-white rounded-xl shadow-sm overflow-hidden"
         >
           {pendingOrders.length > 0 ? (
             <>
@@ -343,7 +346,7 @@ const PendingOrders = () => {
                     disabled={page === 1}
                     className={`px-3 py-1 rounded-md ${
                       page === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                    } text-black text-sm`}
+                    } text-white text-sm`}
                   >
                     Previous
                   </button>
@@ -351,8 +354,8 @@ const PendingOrders = () => {
                     onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
                     disabled={page >= totalPages}
                     className={`px-3 py-1 rounded-md ${
-                      page >= totalPages ? 'bg-gray-200 text-black cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                    } text-black text-sm`}
+                      page >= totalPages ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    } text-sm`}
                   >
                     Next
                   </button>

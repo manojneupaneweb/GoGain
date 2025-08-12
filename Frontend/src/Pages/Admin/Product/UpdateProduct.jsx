@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -26,11 +26,11 @@ function UpdateProduct() {
       const response = await axios.get(`/api/v1/product/${id}`);
       const product = response.data.data;
       console.log('Fetched product:', product.image);
-      
-      
+
+
       // Parse specifications if they're stored as string
-      const specs = typeof product.specifications === 'string' 
-        ? JSON.parse(product.specifications) 
+      const specs = typeof product.specifications === 'string'
+        ? JSON.parse(product.specifications)
         : product.specifications || [{ topic: '', value: '' }];
 
       setProductData({
@@ -42,7 +42,7 @@ function UpdateProduct() {
         stock: product.stock || '',
         discount: product.discount || '',
         warranty: product.warranty || '',
-        specifications: specs
+        specifications: Array.isArray(specs) ? specs : [{ topic: '', value: '' }]
       });
 
       if (product.image) {
@@ -75,7 +75,7 @@ function UpdateProduct() {
         ...prev,
         image: file
       }));
-      
+
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -104,7 +104,7 @@ function UpdateProduct() {
 
   const removeSpecificationField = (index) => {
     if (productData.specifications.length <= 1) return;
-    
+
     const updatedSpecifications = [...productData.specifications];
     updatedSpecifications.splice(index, 1);
     setProductData(prev => ({
@@ -138,7 +138,7 @@ function UpdateProduct() {
     formData.append('specifications', JSON.stringify(productData.specifications));
 
     try {
-      const response = await axios.put(`/api/v1/product/${id}`, formData, {
+      const responce = await axios.put(`/api/v1/product/updateproduct/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -168,7 +168,7 @@ function UpdateProduct() {
       </div>
     );
   };
-  
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -189,9 +189,9 @@ function UpdateProduct() {
               </label>
               <div className="flex items-center space-x-4">
                 {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
-                    alt="Product preview" 
+                  <img
+                    src={imagePreview}
+                    alt="Product preview"
                     className="h-24 w-24 object-cover rounded-md border border-gray-300"
                   />
                 ) : (
@@ -374,7 +374,7 @@ function UpdateProduct() {
                   Add Specification
                 </button>
               </div>
-              
+
               {productData.specifications.map((spec, index) => (
                 <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
                   <div className="md:col-span-5">

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
-import { motion } from 'framer-motion';
 import { initiateEsewaPayment } from '../utils/payment';
+import { motion } from 'framer-motion';
+
 
 function Pricing() {
     const [showModal, setShowModal] = useState(false);
@@ -20,7 +21,7 @@ function Pricing() {
             return;
         }
 
-        const amount = parseInt(plan.price.replace(/रु\. |,/g, ''));
+        const amount = parseInt(plan.price.replace(/रु\. |,/g, '')); 
         setTotal(amount);
         setSelectedPlan(plan);
         setShowPaymentPopup(true);
@@ -105,7 +106,7 @@ function Pricing() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                >
+                    >
                     <motion.div
                         initial={{ scale: 0.95, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
