@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import {
   FaUserCircle, FaEnvelope, FaLock, FaPhone,
-  FaVenusMars, FaCalendarAlt, FaMapMarkerAlt,
-  FaHome, FaImage, FaDumbbell, FaTimes, 
-  FaSpinner, FaCheck, FaArrowLeft, FaEye, FaEyeSlash,
-  FaLocationArrow, FaMapPin
+  FaVenusMars, FaHome, FaImage, FaDumbbell,
+  FaTimes, FaSpinner, FaCheck, FaArrowLeft,
+  FaEye, FaEyeSlash
 } from 'react-icons/fa';
 
 const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
@@ -15,14 +14,10 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
     email: '',
     phone: '',
     password: '',
-    address: '',
     gender: 'male',
-    date_of_birth: '',
     avatar: null,
-    location: '',
-    coordinates: null
   });
-  
+
   const [otp, setOtp] = useState('');
   const [isSendingOTP, setIsSendingOTP] = useState(false);
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
@@ -30,15 +25,9 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
   const [step, setStep] = useState(1); // 1: Form, 2: OTP Verification
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [locationStatus, setLocationStatus] = useState('idle'); // idle, loading, granted, denied
-  const [mapModalOpen, setMapModalOpen] = useState(false);
-
-  // Check if browser supports geolocation
-  const isGeolocationSupported = 'geolocation' in navigator;
 
   const validateForm = () => {
     const newErrors = {};
-    
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -55,10 +44,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
     } else if (!/^[0-9]{10,15}$/.test(formData.phone)) {
       newErrors.phone = 'Invalid phone number';
     }
-    if (!formData.date_of_birth) newErrors.date_of_birth = 'Date of birth is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -69,76 +55,15 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
       ...prev,
       [name]: files ? files[0] : value
     }));
-    
-    // Clear error when user types
+
     if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = {...prev};
-        delete newErrors[name];
-        return newErrors;
-      });
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const getCurrentLocation = () => {
-    if (!isGeolocationSupported) {
-      toast.warning('Geolocation is not supported by your browser');
-      return;
-    }
-
-    setLocationStatus('loading');
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setFormData(prev => ({
-          ...prev,
-          coordinates: { lat: latitude, lng: longitude }
-        }));
-        
-        // Reverse geocode to get address (using a mock function here - you'd use a real API)
-        reverseGeocode(latitude, longitude).then(address => {
-          setFormData(prev => ({
-            ...prev,
-            location: address,
-            address: address
-          }));
-          setLocationStatus('granted');
-          toast.success('Location detected successfully!');
-        }).catch(() => {
-          setLocationStatus('granted');
-          toast.success('Coordinates captured but address detection failed');
-        });
-      },
-      (error) => {
-        setLocationStatus('denied');
-        toast.error('Location access was denied or failed');
-        console.error('Geolocation error:', error);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
-  };
-
-  // Mock reverse geocoding function - replace with actual API call
-  const reverseGeocode = async (lat, lng) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-      }, 1000);
-    });
   };
 
   const handleSendOTP = async () => {
     if (!validateForm()) return;
-    
+
     setIsSendingOTP(true);
     try {
       await axios.post('/api/v1/user/send-otp', { email: formData.email });
@@ -156,7 +81,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
       toast.error('Please enter the OTP');
       return;
     }
-    
+
     setIsVerifyingOTP(true);
     try {
       await axios.post('/api/v1/user/verify-otp', {
@@ -180,13 +105,13 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
           formDataToSend.append(key, formData[key]);
         }
       });
-      
+
       const res = await axios.post('/api/v1/user/register', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       localStorage.setItem('accessToken', res.data.token);
       toast.success('Registration successful!');
       onSuccess();
@@ -197,19 +122,22 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     handleSendOTP();
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fade-in relative border border-orange-400/30 overflow-y-auto max-h-screen">
-        <div className="absolute -inset-1 bg-orange-500/10 rounded-2xl blur-sm"></div>
-        <div className="relative">
+    <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-orange-400/30 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-orange-500 flex items-center">
-              <FaDumbbell className="mr-2 animate-bounce" /> 
+              <FaDumbbell className="mr-2 animate-bounce" />
               {step === 1 ? 'Join Our Fitness Community!' : 'Verify Your Email'}
             </h2>
             <button
@@ -221,8 +149,8 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
           </div>
 
           {step === 1 ? (
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
                 <label className="flex text-gray-300 mb-2 items-center">
                   <FaUserCircle className="mr-2 text-orange-400" /> Full Name
                   {errors.fullName && <span className="text-red-500 text-sm ml-auto">{errors.fullName}</span>}
@@ -237,7 +165,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 />
               </div>
 
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="flex text-gray-300 mb-2 items-center">
                     <FaEnvelope className="mr-2 text-orange-400" /> Email
@@ -278,7 +206,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 </div>
               </div>
 
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="flex text-gray-300 mb-2 items-center">
                     <FaPhone className="mr-2 text-orange-400" /> Phone Number
@@ -312,68 +240,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 </div>
               </div>
 
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="flex text-gray-300 mb-2 items-center">
-                    <FaCalendarAlt className="mr-2 text-orange-400" /> Date of Birth
-                    {errors.date_of_birth && <span className="text-red-500 text-sm ml-auto">{errors.date_of_birth}</span>}
-                  </label>
-                  <input
-                    name="date_of_birth"
-                    type="date"
-                    className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.date_of_birth ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white transition-all duration-200`}
-                    value={formData.date_of_birth}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <label className="flex text-gray-300 mb-2 items-center">
-                    <FaMapMarkerAlt className="mr-2 text-orange-400" /> Location
-                    {errors.location && <span className="text-red-500 text-sm ml-auto">{errors.location}</span>}
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      name="location"
-                      type="text"
-                      className={`flex-1 px-4 py-3 bg-gray-700/80 border ${errors.location ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
-                      placeholder="Your location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={getCurrentLocation}
-                      disabled={!isGeolocationSupported || locationStatus === 'loading'}
-                      className="bg-orange-500/80 hover:bg-orange-600 text-white px-4 rounded-lg transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Detect current location"
-                    >
-                      {locationStatus === 'loading' ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <FaLocationArrow />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="flex text-gray-300 mb-2 items-center">
-                  <FaHome className="mr-2 text-orange-400" /> Address
-                  {errors.address && <span className="text-red-500 text-sm ml-auto">{errors.address}</span>}
-                </label>
-                <input
-                  name="address"
-                  type="text"
-                  className={`w-full px-4 py-3 bg-gray-700/80 border ${errors.address ? 'border-red-500' : 'border-gray-600/50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 transition-all duration-200`}
-                  placeholder="Full Address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="mb-6">
+              <div>
                 <label className="flex text-gray-300 mb-2 items-center">
                   <FaImage className="mr-2 text-orange-400" /> Profile Picture
                 </label>
@@ -401,7 +268,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({...prev, avatar: null}))}
+                      onClick={() => setFormData(prev => ({ ...prev, avatar: null }))}
                       className="text-red-400 hover:text-red-300 text-sm"
                     >
                       Remove
@@ -412,7 +279,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-orange-500/30"
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-orange-500/30 mt-6"
                 disabled={isSendingOTP}
               >
                 {isSendingOTP ? (
@@ -424,7 +291,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 )}
               </button>
 
-              <div className="mt-4 text-center text-gray-400">
+              <div className="text-center text-gray-400 pt-2">
                 Already have an account?{' '}
                 <button
                   type="button"
@@ -436,14 +303,14 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
               </div>
             </form>
           ) : (
-            <div className="text-center">
-              <div className="mb-6 text-gray-300">
+            <div className="space-y-6">
+              <div className="text-gray-300">
                 <p>We've sent a 6-digit verification code to:</p>
                 <p className="font-bold text-orange-400 mt-1">{formData.email}</p>
                 <p className="text-sm mt-2">Please check your inbox and enter the code below</p>
               </div>
-              
-              <div className="mb-6">
+
+              <div>
                 <label className="block text-gray-300 mb-2">Verification Code</label>
                 <input
                   type="text"
@@ -454,7 +321,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                   maxLength={6}
                 />
               </div>
-              
+
               <div className="flex gap-4">
                 <button
                   onClick={() => setStep(1)}
@@ -462,7 +329,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 >
                   <FaArrowLeft className="mr-2" /> Back
                 </button>
-                
+
                 <button
                   onClick={handleVerifyOTP}
                   className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-orange-500/30"
@@ -470,7 +337,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                 >
                   {isVerifyingOTP || isRegistering ? (
                     <>
-                      <FaSpinner className="animate-spin mr-2" /> 
+                      <FaSpinner className="animate-spin mr-2" />
                       {isRegistering ? 'Registering...' : 'Verifying...'}
                     </>
                   ) : (
@@ -480,8 +347,8 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
                   )}
                 </button>
               </div>
-              
-              <div className="mt-4 text-gray-400 text-sm">
+
+              <div className="text-gray-400 text-sm text-center">
                 Didn't receive code?{' '}
                 <button
                   onClick={handleSendOTP}

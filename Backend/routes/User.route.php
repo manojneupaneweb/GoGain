@@ -18,31 +18,32 @@ try {
     // Register route
     if ($method === 'POST' && preg_match('/\/register\/?$/', $uri)) {
         $userController->registerUser();
-    }
-    elseif ($method === 'POST' && preg_match('/\/login\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/login\/?$/', $uri)) {
         $userController->loginUser();
-    }
-    elseif ($method === 'POST' && preg_match('/\/send-otp\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/send-otp\/?$/', $uri)) {
         $userController->sendOtp();
-    }
-    elseif ($method === 'POST' && preg_match('/\/verify-otp\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/verify-otp\/?$/', $uri)) {
         $userController->verifyOtp();
-    }
-    elseif ($method === 'POST' && preg_match('/\/contactform\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/contactform\/?$/', $uri)) {
         $userController->contactform();
+    } elseif ($method === 'GET' && preg_match('/\/getcontactform\/?$/', $uri)) {
+        $userController->getcontactform();
+    } elseif ($method === 'POST' && preg_match('/\/forgetpassword\/?$/', $uri)) {
+        $userController->forgetPassword();
     }
-   elseif ($method === 'GET' && preg_match('/\/getcontactform\/?$/', $uri)) {
-    $userController->getcontactform();
-}
 
 
 
     //procted routes -------------------🔐 Only logged-in users can access
     elseif ($method === 'GET' && preg_match('/\/getuser\/?$/', $uri)) {
-    checkAuth(); // 
-    $userController->getUser();
-}
-    else {
+        checkAuth(); // 
+        $userController->getUser();
+    } 
+    //verify user login or not 
+    elseif ($method === 'GET' && preg_match('/\/verify-user\/?$/', $uri)) {
+        checkAuth(); // 
+        $userController->verifyUser();
+    } else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);
     }

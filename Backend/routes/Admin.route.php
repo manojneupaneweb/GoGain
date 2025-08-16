@@ -32,20 +32,16 @@ try {
         $DashboardController->getAllUserInformation();
     }
 
-
+    //all user plans 
+    elseif ($method === 'GET' && preg_match('/\/getalluserplans\/?$/', $uri)) {
+        checkAdminAuth();
+        $DashboardController->getAllUserPlans();
+    }
     //products
     elseif ($method === 'POST' && preg_match('/\/changestatus\/?$/', $uri)) {
-        checkAdminAuth(); 
+        checkAdminAuth();
         $DashboardController->changeOrderStatus();
-    } 
-    
-    
-    
-    
-    
-    
-    
-    else {
+    } else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);
     }

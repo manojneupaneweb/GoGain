@@ -183,10 +183,7 @@ class UserController
             $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
             $phone = trim($_POST['phone'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            $address = trim($_POST['address'] ?? '');
             $gender = trim($_POST['gender'] ?? '');
-            $dob = trim($_POST['date_of_birth'] ?? '');
-            $location = trim($_POST['location'] ?? '');
             $avatarFile = $_FILES['avatar'] ?? null;
 
             $missingFields = [];
@@ -199,14 +196,8 @@ class UserController
                 $missingFields[] = 'phone';
             if (empty($password))
                 $missingFields[] = 'password';
-            if (empty($address))
-                $missingFields[] = 'address';
             if (empty($gender))
                 $missingFields[] = 'gender';
-            if (empty($dob))
-                $missingFields[] = 'date_of_birth';
-            if (empty($location))
-                $missingFields[] = 'location';
             if (empty($avatarFile) || empty($avatarFile['tmp_name']))
                 $missingFields[] = 'avatar';
 
@@ -238,10 +229,11 @@ class UserController
             $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
 
             $stmt = $this->pdo->prepare("
-            INSERT INTO users 
-            (id, fullName, email, phone, password, address, gender, date_of_birth, role, avatar, location, created_at, updated_at, last_login) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', ?, ?, NOW(), NOW(), NULL)
-            ");
+    INSERT INTO users 
+    (id, fullName, email, phone, password, delivery_address, gender, role, avatar, created_at, updated_at, last_login) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'user', ?, NOW(), NOW(), NULL)
+");
+
 
             $result = $stmt->execute([
                 $id,
@@ -249,15 +241,42 @@ class UserController
                 $email,
                 $phone,
                 $hashedPassword,
-                $address,
+                null,
                 $gender,
-                $dob,
-                $avatarUrl,
-                $location
+                $avatarUrl
             ]);
 
 
+
             if ($result) {
+                // Optionally, send a welcome email
+                $subject = "Welcome to GoGain!";
+                $body = "
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px; }
+        .container { background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #e74c3c; }
+        .message { font-size: 16px; color: #2c3e50; line-height: 1.6; }
+        .highlight { font-weight: bold; color: #e74c3c; }
+        .footer { font-size: 12px; color: #6c757d; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <h2>Welcome to GoGain, {$fullName}! </h2>
+        <p class='message'>Your account is now active. Log in with your email and password to start your fitness journey, track your progress, and push beyond your limits.</p>
+        <p class='message'><em>“Don’t wish for it. Work for it.”</em> — Let’s get moving!</p>
+        <div class='footer'>
+            <p>&copy; " . date('Y') . " GoGain. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+";
+
+                sendMail($email, $subject, $body);
                 echo json_encode([
                     'success' => true,
                     'message' => 'User registered successfully.',
@@ -375,7 +394,7 @@ class UserController
             $userId = $_SESSION['user_id'];
 
             // Fetch user info (excluding password)
-            $stmt = $this->pdo->prepare("SELECT id, fullName, email, phone, address, gender, date_of_birth, role, avatar, location, created_at, updated_at, last_login FROM users WHERE id = ?");
+            $stmt = $this->pdo->prepare("SELECT id, fullName, email, phone, gender, role, avatar,  created_at, updated_at, last_login FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -497,8 +516,115 @@ class UserController
         }
     }
 
+    public function verifyUser()
+    {
+        header('Content-Type: application/json');
 
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
 
+        try {
+            $userId = $_SESSION['user_id'];
+            if ($userId) {
+                echo json_encode(['success' => true, 'message' => 'This user is logged in and verified.']);
+            } else {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error']);
+        }
+    }
 
+    public function forgetPassword()
+    {
+        try {
+            header('Content-Type: application/json');
+
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
+                return;
+            }
+
+            if (empty($data['email']) || empty($data['newPassword'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Email and new password are required']);
+                return;
+            }
+
+            $email = trim($data['email']);
+            $newPassword = trim($data['newPassword']);
+
+            // Check if user exists
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found']);
+                return;
+            }
+
+            // Hash new password
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+            // Update password
+            $stmt = $this->pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $result = $stmt->execute([$hashedPassword, $user['id']]);
+
+            if ($result) {
+                // Optionally, send confirmation email
+                $subject = "Your GoGain Password has been Reset";
+                $body = "
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px; }
+                        .container { background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                        .message { font-size: 16px; color: #2c3e50; }
+                        .footer { font-size: 12px; color: #6c757d; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Password Reset Confirmation</h2>
+                        <p class='message'>Hello,</p>
+                        <p class='message'>Your password has been successfully reset. If you did not request this change, please contact support immediately.</p>
+                        <div class='footer'>
+                            <p>&copy; " . date('Y') . " GoGain. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                ";
+                sendMail($email, $subject, $body);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Password updated successfully.'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to update password.',
+                    'errorInfo' => $stmt->errorInfo()
+                ]);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
 
 }

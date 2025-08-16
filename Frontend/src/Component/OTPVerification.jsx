@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+// import { useState,  } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FaDumbbell, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
@@ -10,13 +10,13 @@ const OTPVerification = ({
   onClose,
   onSuccess,
   otpTimer,
-  setOtpTimer,
+  // setOtpTimer,
   canResendOTP,
-  setCanResendOTP,
+  // setCanResendOTP,
   isVerifying,
   setIsVerifying,
   isSendingOTP,
-  setIsSendingOTP,
+  // setIsSendingOTP,
   onResendOTP
 }) => {
   const formatTime = (seconds) => {

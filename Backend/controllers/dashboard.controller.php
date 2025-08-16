@@ -318,7 +318,30 @@ class DashboardController
         }
     }
 
+public function getAllUserPlans()
+    {
+        global $pdo;
 
+        try {
+            // Get all users with their information
+            $stmt = $pdo->prepare("SELECT id, user_id, plan_name, start_date, expire_date, created_at FROM user_plans");
+            $stmt->execute();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $users
+            ]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 
 
 

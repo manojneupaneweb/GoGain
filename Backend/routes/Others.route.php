@@ -55,17 +55,11 @@ try {
 
 
 
-    //plan route 
-    elseif ($method === 'POST' && preg_match('/\/createplan\/?$/', $uri)) {
-        require_once __DIR__ . '/../middleware/auth.middleware.php';
+    //plan route
+    if ($method === 'POST' && preg_match('#/createplan/?$#', $uri)) {
         checkAuth();
-        header('Content-Type: application/json');
-        echo json_encode($planController->createplan(json_decode(file_get_contents('php://input'), true)));
-        exit;
+        $planController->createPlan();
     }
-
-
-
 
 
 

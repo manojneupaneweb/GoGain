@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { toast, ToastContainer } from 'react-toastify';
+import {  ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaBars, FaTimes, FaUser, FaDumbbell, FaChevronDown, FaShoppingCart } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +22,7 @@ function Header() {
   const [isSendingOTP, setIsSendingOTP] = useState(false);
   const [otpTimer, setOtpTimer] = useState(300);
   const [canResendOTP, setCanResendOTP] = useState(false);
-  const otpTimerRef = useRef(null);
+  // const otpTimerRef = useRef(null);
 
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -48,6 +48,7 @@ function Header() {
       }
     } catch (error) {
       setUserLoggedIn(false);
+      console.error('Error fetching user data:', error);
     }
   };
 

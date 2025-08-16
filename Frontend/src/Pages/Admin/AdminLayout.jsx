@@ -17,6 +17,7 @@ import {
 import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import axios from 'axios';
+import handelLogout from '../../utils/Logout';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -336,12 +337,12 @@ export default function AdminLayout() {
                     >
                       Settings
                     </a>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm transition-colors duration-300 text-gray-300 hover:bg-gray-700 hover:text-white"
-                    >
-                      Logout
-                    </a>
+                    <button 
+                    className="block px-4 py-2 text-sm transition-colors duration-300 text-gray-300 hover:bg-gray-700 hover:text-white"
+                    onClick={handelLogout}>
+                    Logout
+
+                    </button>
                   </div>
                 )}
               </div>

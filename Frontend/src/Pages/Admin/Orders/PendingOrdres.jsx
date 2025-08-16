@@ -73,6 +73,9 @@ const PendingOrders = () => {
         }
       });
 
+      console.log("order response data ", response);
+      
+
       if (response.data && Array.isArray(response.data.data)) {
         setOrders(response.data.data);
         setTotalPages(Math.ceil((response.data.total || 1) / limit));

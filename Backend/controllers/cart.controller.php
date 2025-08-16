@@ -366,31 +366,31 @@ class OrderController
     }
 
     public function GetOrderItem()
-{
-    try {
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT * FROM orders");
-        $stmt->execute();
+    {
+        try {
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT * FROM orders");
+            $stmt->execute();
 
-        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (empty($orders)) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'No orders found']);
-            return;
+            if (empty($orders)) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'No orders found']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $orders]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
         }
-
-        http_response_code(200);
-        echo json_encode(['success' => true, 'data' => $orders]);
-    } catch (PDOException $e) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database error',
-            'error' => $e->getMessage()
-        ]);
     }
-}
 
 }
 
@@ -409,69 +409,96 @@ class PlanController
         $this->pdo = $db;
     }
 
-    public function createPlan(array $planItems)
-    {
-        $now = date('Y-m-d H:i:s');
 
-        $this->pdo->beginTransaction();
+    public function createPlan()
+    {
+        header('Content-Type: application/json');
+        session_start();
+
+        global $pdo; // your PDO instance
+
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
 
         try {
-            $stmt = $this->pdo->prepare(" 
-            INSERT INTO user_plans 
-            (id, user_id, plan_name, start_date, expire_date, created_at)
-            VALUES 
-            (:id, :user_id, :plan_name, :start_date, :expire_date, :created_at)
-        ");
+            $userId = $_SESSION['user_id'];
 
-            foreach ($planItems as $item) {
-                if (empty($item['user_id']) || empty($item['plan_name'])) {
-                    $this->pdo->rollBack();
-                    return [
-                        'success' => false,
-                        'message' => 'Missing user_id or plan_name in one or more items',
-                    ];
-                }
+            // Decode JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
 
-                $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
-                $user_id = $item['user_id'];
-                $plan_name = $item['plan_name'];
-                $start_date = date('Y-m-d');
-
-                // Calculate expire date based on plan_name
-                $expire_date = match ($plan_name) {
-                    '1 Month' => date('Y-m-d', strtotime("+30 days")),
-                    '3 Months' => date('Y-m-d', strtotime("+90 days")),
-                    '6 Months' => date('Y-m-d', strtotime("+180 days")),
-                    '1 Year' => date('Y-m-d', strtotime("+365 days")),
-                    default => date('Y-m-d', strtotime("+30 days")),
-                };
-
-                $stmt->bindParam(':id', $id);
-                $stmt->bindParam(':user_id', $user_id);
-                $stmt->bindParam(':plan_name', $plan_name);
-                $stmt->bindParam(':start_date', $start_date);
-                $stmt->bindParam(':expire_date', $expire_date);
-                $stmt->bindParam(':created_at', $now);
-
-                $stmt->execute();
+            if (!isset($input['planItem'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Missing planItem in request']);
+                return;
             }
 
-            $this->pdo->commit();
+            $planItem = $input['planItem'];
 
-            return [
+            // Validate required fields
+            if (empty($planItem['name']) || empty($planItem['duration'])) {
+                http_response_code(422);
+                echo json_encode(['success' => false, 'message' => 'Missing required fields: name or duration']);
+                return;
+            }
+
+            $planName = $planItem['name'];
+            $duration = $planItem['duration'];
+            $startDate = date('Y-m-d');
+
+            // Calculate expire date based on duration
+            $expireDate = match ($duration) {
+                '1 Month' => date('Y-m-d', strtotime('+30 days')),
+                '3 Months' => date('Y-m-d', strtotime('+90 days')),
+                '6 Months' => date('Y-m-d', strtotime('+180 days')),
+                '1 Year' => date('Y-m-d', strtotime('+365 days')),
+                default => date('Y-m-d', strtotime('+30 days')),
+            };
+
+            // Generate UUID for id
+            $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
+
+            // Insert into DB
+            $stmt = $pdo->prepare("
+            INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date)
+            VALUES (:id, :user_id, :plan_name, :start_date, :expire_date)
+        ");
+
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->bindParam(':plan_name', $planName);
+            $stmt->bindParam(':start_date', $startDate);
+            $stmt->bindParam(':expire_date', $expireDate);
+
+            $stmt->execute();
+
+            // Success response
+            http_response_code(201);
+            echo json_encode([
                 'success' => true,
-                'message' => 'Plan(s) created successfully',
-                'data' => $planItems,
-            ];
-
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            return [
+                'message' => 'Plan created successfully',
+                'data' => [
+                    'id' => $id,
+                    'user_id' => $userId,
+                    'plan_name' => $planName,
+                    'start_date' => $startDate,
+                    'expire_date' => $expireDate
+                ]
+            ]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
                 'success' => false,
-                'message' => 'Error creating plan(s): ' . $e->getMessage(),
-            ];
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
         }
     }
+
+
 
 
 }

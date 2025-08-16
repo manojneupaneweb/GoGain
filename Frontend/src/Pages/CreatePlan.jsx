@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 
 function Createplan() {
   const [searchParams] = useSearchParams();
-  const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const token = localStorage.getItem("accessToken");
@@ -14,6 +13,7 @@ function Createplan() {
   useEffect(() => {
     const processPayment = async () => {
       const dataParam = searchParams.get('data');
+      console.log("Payment Data Param:", dataParam);
       if (!dataParam) {
         setError('No payment data found in URL.');
         setLoading(false);
@@ -22,34 +22,43 @@ function Createplan() {
 
       try {
         const decoded = JSON.parse(atob(dataParam));
-        setPaymentData(decoded);
-
+        if (!decoded) {
+          console.log("decoded not found");
+          return
+        }
         const planItem = localStorage.getItem("selectedPlan");
         if (!planItem) {
           throw new Error('No plan selected');
         }
-
-        const response = await axios.post(
-          "/api/v1/cart/createplan",
-          { planItem: JSON.parse(planItem) }, // Parse the planItem if it's stored as JSON string
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
+        try {
+          await axios.post(
+            "/api/v1/cart/createplan",
+            { planItem: JSON.parse(planItem) },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
             }
-          }
-        );
+          );
 
-        console.log("✅ plan Response:", response.data);
-        toast.success("Plan created successfully!");
+        } catch (error) {
+          console.error("❌ Error creating plan:", error);
+          throw new Error(error.response?.data?.message || 'Failed to create plan');
 
-        localStorage.removeItem("selectedPlan");
-        navigate('/profile');
+        }
+        toast.success('Plan created successfully! Redirecting in 15 seconds...');
+        localStorage.removeItem('selectedPlan');
+
+        setTimeout(() => {
+          navigate('/profile');
+        }, 15000); // 15000 ms = 15 seconds
+
       } catch (err) {
         console.error("❌ Plan creation failed:", err);
-        const errorMessage = err.response?.data?.message || 
-                             err.message || 
-                             'Plan creation failed. Please contact support.';
+        const errorMessage = err.response?.data?.message ||
+          err.message ||
+          'Plan creation failed. Please contact support.';
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
