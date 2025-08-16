@@ -4,6 +4,7 @@ require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
 
 require 'vendor/autoload.php';
+
 use Ramsey\Uuid\Uuid;
 
 use Firebase\JWT\JWT;
@@ -295,7 +296,6 @@ class UserController
                     'errorInfo' => $stmt->errorInfo()
                 ]);
             }
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
@@ -380,6 +380,81 @@ class UserController
         ]);
     }
 
+    public function ChangePassword()
+    {
+        global $pdo;
+
+        // Get the raw JSON input
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        $userId = $_SESSION['user_id'];
+
+        if (!$userId) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        $currentPassword = $data['currentPassword'] ?? '';
+        $newPassword = $data['newPassword'] ?? '';
+        $confirmPassword = $data['confirmPassword'] ?? '';
+
+        // Basic validation
+        if (!$currentPassword || !$newPassword || !$confirmPassword) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'All fields are required'
+            ]);
+            return;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'New password and confirmation do not match'
+            ]);
+            return;
+        }
+
+        try {
+            // Fetch user from DB
+            $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user || !password_verify($currentPassword, $user['password'])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Current password is incorrect'
+                ]);
+                return;
+            }
+
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->execute([$hashedPassword, $userId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Password changed successfully'
+            ]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
     public function getUser()
     {
         header('Content-Type: application/json');
@@ -394,7 +469,7 @@ class UserController
             $userId = $_SESSION['user_id'];
 
             // Fetch user info (excluding password)
-            $stmt = $this->pdo->prepare("SELECT id, fullName, email, phone, gender, role, avatar,  created_at, updated_at, last_login FROM users WHERE id = ?");
+            $stmt = $this->pdo->prepare("SELECT fullName, role, avatar FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -408,12 +483,148 @@ class UserController
                 http_response_code(404);
                 echo json_encode(['success' => false, 'message' => 'User not found']);
             }
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error']);
         }
     }
+
+    public function getUserProfile()
+    {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized login']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+
+            // 1. Fetch user info
+            $stmtUser = $this->pdo->prepare("
+            SELECT id, fullName, email, phone, gender, role, avatar, created_at, updated_at, last_login 
+            FROM users 
+            WHERE id = ?
+        ");
+            $stmtUser->execute([$userId]);
+            $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found']);
+                return;
+            }
+
+            // 2. Fetch orders with product info
+            $stmtOrders = $this->pdo->prepare("
+    SELECT 
+        o.id AS order_id,
+        o.quantity,
+        o.order_status,
+        o.payment_status,
+        o.address,
+        o.createdAt AS createdAt,
+        o.updatedAt AS updatedAt,
+        p.id AS product_id,
+        p.name AS product_name,
+        p.price AS product_price,
+        p.image AS product_image
+    FROM orders o
+    LEFT JOIN products p ON o.product_id = p.id
+    WHERE o.user_id = ?
+    ORDER BY o.createdAt DESC
+    LIMIT 4
+");
+
+
+            $stmtOrders->execute([$userId]);
+            $orders = $stmtOrders->fetchAll(PDO::FETCH_ASSOC);
+
+            // 3. Fetch user plans
+            $stmtPlans = $this->pdo->prepare("
+            SELECT id, plan_name, start_date, expire_date 
+            FROM user_plans 
+            WHERE user_id = ?
+        ");
+            $stmtPlans->execute([$userId]);
+            $plans = $stmtPlans->fetchAll(PDO::FETCH_ASSOC);
+
+            // Optional: update last_login
+            $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+            $updateStmt->execute([$userId]);
+
+            // Send full response
+            echo json_encode([
+                'success' => true,
+                'user' => $user,
+                'orders' => $orders,
+                'plans' => $plans
+            ]);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getMyOrders()
+    {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized login']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+
+            $stmt = $this->pdo->prepare("
+    SELECT 
+        o.id AS order_id,
+        o.product_id,
+        o.quantity,
+        o.order_status,
+        o.payment_status,
+        o.address,
+        o.createdAt AS createdAt,
+        o.updatedAt AS updatedAt,
+        p.name AS product_name,
+        p.price AS product_price,
+        p.image AS product_image
+    FROM orders o
+    LEFT JOIN products p ON TRIM(o.product_id) = TRIM(p.id)
+    WHERE o.user_id = ?
+");
+
+
+            $stmt->execute([$userId]);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Orders fetched successfully',
+                'orders' => $orders,
+            ]);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 
     public function contactform()
@@ -477,7 +688,6 @@ class UserController
                     'errorInfo' => $stmt->errorInfo()
                 ]);
             }
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
@@ -626,5 +836,4 @@ class UserController
             ]);
         }
     }
-
 }

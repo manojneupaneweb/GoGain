@@ -38,7 +38,16 @@ try {
     elseif ($method === 'GET' && preg_match('/\/getuser\/?$/', $uri)) {
         checkAuth(); // 
         $userController->getUser();
-    } 
+    } elseif ($method === 'GET' && preg_match('/\/getuserprofile\/?$/', $uri)) {
+        checkAuth(); // 
+        $userController->getUserProfile();
+    } elseif ($method === 'POST' && preg_match('/\/change-password\/?$/', $uri)) {
+        checkAuth(); // middleware to ensure only admin can access
+        $userController->ChangePassword();
+    } elseif ($method === 'GET' && preg_match('/\/myorders\/?$/', $uri)) {
+        checkAuth(); // 
+        $userController->getMyOrders();
+    }
     //verify user login or not 
     elseif ($method === 'GET' && preg_match('/\/verify-user\/?$/', $uri)) {
         checkAuth(); // 

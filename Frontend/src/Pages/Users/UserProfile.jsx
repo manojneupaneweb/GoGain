@@ -1,35 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 function UserProfile() {
-  const [userData, setUserData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    joinDate: '',
-    membershipType: '',
-    profileImage: '',
-    goals: '',
-    height: '',
-    weight: ''
+  const [profileData, setProfileData] = useState({
+    user: null,
+    orders: [],
+    plans: []
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('accessToken');
       try {
-        const response = await axios.get('/api/v1/user/getuser', {
+        const response = await axios.get('/api/v1/user/getuserprofile', {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
 
         if (response.data.success) {
-          setUserData(response.data.user);
+          setProfileData({
+            user: response.data.user,
+            orders: response.data.orders || [],
+            plans: response.data.plans || []
+          });
+        } else {
+          setError('Failed to fetch user data');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
+        setError(error.response?.data?.message || 'Failed to fetch user data');
       } finally {
         setIsLoading(false);
       }
@@ -38,14 +40,23 @@ function UserProfile() {
     fetchUserData();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const handleSave = async () => {
-    // Add your save/update API call here
-    setIsEditing(false);
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   if (isLoading) {
@@ -56,187 +67,271 @@ function UserProfile() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center p-6 max-w-md mx-auto bg-white rounded-lg shadow-md">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Profile</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileData.user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">No user data found</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
           {/* Profile Header */}
-          <div className="bg-indigo-600 py-6 px-6 sm:px-8 text-white">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-8 px-6 sm:px-8 text-white">
             <div className="flex flex-col sm:flex-row items-center justify-between">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 mb-4 sm:mb-0">
                 <div className="relative">
-                  <img 
-                    src={userData.avatar || 'https://via.placeholder.com/150'} 
-                    alt="Profile" 
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white object-cover"
+                  <img
+                    src={profileData.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.user.fullName)}&background=random`}
+                    alt="Profile"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/50 object-cover shadow-md"
                   />
-                  {isEditing && (
-                    <button className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-md">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                      </svg>
-                    </button>
-                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{userData.fullName}</h1>
-                  <h1 className="text-2xl font-bold">{userData.gender}</h1>
-                  <h1 className="text-2xl font-bold">{userData.date_of_birth}</h1>
-                  <p className="text-indigo-100">{userData.membershipType || 'Premium Member'}</p>
+                  <h1 className="text-2xl font-bold">{profileData.user.fullName}</h1>
+                  <p className="text-indigo-100 flex items-center mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {profileData.user.role.charAt(0).toUpperCase() + profileData.user.role.slice(1)}
+                  </p>
                 </div>
-              </div> 
-              <p>{userData.last_login}</p>
-              <button 
-                onClick={() => setIsEditing(!isEditing)}
-                className="mt-4 sm:mt-0 px-4 py-2 bg-white text-indigo-600 rounded-md font-medium hover:bg-indigo-50 transition duration-300"
-              >
-                {isEditing ? 'Cancel' : 'Edit Profile'}
-              </button>
+              </div>
+              <div className="flex flex-col items-end">
+                <p className="text-sm text-indigo-100 mb-2">
+                  Last active: {formatDateTime(profileData.user.last_login)}
+                </p>
+                <Link
+                  to="/setting"
+                  className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-md font-medium hover:bg-white/30 transition duration-300 border border-white/30"
+                >Setting</Link>
+              </div>
             </div>
           </div>
 
           {/* Profile Content */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 sm:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 sm:p-8">
             {/* Personal Info */}
-            <div className="md:col-span-2 space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Personal Information</h2>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="name"
-                      value={userData.fullName}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  ) : (
-                    <p className="mt-1 text-gray-900">{userData.fullName}</p>
-                  )}
-                </div>
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Personal Information</h2>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      name="email"
-                      value={userData.email}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  ) : (
-                    <p className="mt-1 text-gray-900">{userData.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={userData.phone}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  ) : (
-                    <p className="mt-1 text-gray-900">{userData.phone || 'Not provided'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Member Since</label>
-                  <p className="mt-1 text-gray-900">{new Date(userData.joinDate).toLocaleDateString() || 'N/A'}</p>
-                </div>
-              </div>
-
-              
-            </div>
-
-            {/* Stats */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Fitness Stats</h2>
-              
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Height</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="height"
-                      value={userData.height}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  ) : (
-                    <p className="mt-1 text-gray-900">{userData.height || 'Not set'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Weight</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="weight"
-                      value={userData.weight}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  ) : (
-                    <p className="mt-1 text-gray-900">{userData.weight || 'Not set'}</p>
-                  )}
-                </div>
-
-                <div className="pt-4">
-                  <h3 className="text-sm font-medium text-gray-700">Membership Status</h3>
-                  <div className="mt-2 flex items-center">
-                    <span className="flex-shrink-0 bg-green-500 h-4 w-4 rounded-full"></span>
-                    <span className="ml-2 text-sm font-medium text-gray-900">Active</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <p className="text-gray-900 font-medium">{profileData.user.fullName}</p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">Expires on {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <p className="text-gray-900 font-medium">{profileData.user.email}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <p className="text-gray-900 font-medium">{profileData.user.phone || 'N/A'}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <p className="text-gray-900 font-medium">{profileData.user.gender || 'N/A'}</p>
+
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
+                    <p className="text-gray-900 font-medium">{formatDate(profileData.user.created_at)}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                    <p className="text-gray-900 font-medium">{formatDate(profileData.user.updated_at)}</p>
+                  </div>
                 </div>
               </div>
 
-              {isEditing && (
-                <button
-                  onClick={handleSave}
-                  className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300"
-                >
-                  Save Changes
-                </button>
-              )}
+              {/* Orders Section */}
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">
+                    Recent Orders
+                  </h2>
+                  <Link
+                    to="/myproduct"
+                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center"
+                  >
+                    View All Orders
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 ml-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+
+                {profileData.orders.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Product Name
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Price
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Order Status
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {profileData.orders.map(order => (
+                          <tr key={order.order_id}>
+                            <td className="px-6 py-4 whitespace-nowrap flex items-center text-sm gap-3 font-medium text-gray-900">
+                              <img
+                                src={order.product_image || 'https://via.placeholder.com/50'}
+                                alt={order.product_name}
+                                className="w-8 h-8 rounded-sm object-cover"
+                              />
+                              {order.product_name || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${order.product_price?.toFixed(2) || '0.00'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {order.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  ${order.order_status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                  order.order_status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                                    order.order_status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                                      order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'}`}>
+                                {order.order_status?.charAt(0).toUpperCase() + order.order_status?.slice(1).toLowerCase()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(order.createdAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <p className="mt-2 text-gray-500">No orders found</p>
+                    <Link
+                      to="/products"
+                      className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Browse Products
+                    </Link>
+                  </div>
+                )}
+              </div>
+
             </div>
-          </div>
 
-          {/* Recent Activity */}
-          <div className="border-t border-gray-200 px-6 py-5 sm:px-8">
-            <h2 className="text-xl font-semibold text-gray-800">Recent Activity</h2>
-            <div className="mt-4 space-y-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-indigo-100 p-2 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Completed Workout</p>
-                  <p className="text-sm text-gray-500">Upper Body Strength • 45 mins • Yesterday</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-green-100 p-2 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Achieved New PR</p>
-                  <p className="text-sm text-gray-500">Bench Press • 185 lbs • 2 days ago</p>
-                </div>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Membership Plan */}
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Membership Plan</h2>
+                {profileData.plans.length > 0 ? (
+                  <div className="space-y-4">
+                    {profileData.plans.map(plan => (
+                      <div key={plan.id} className="bg-indigo-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-indigo-800">{plan.plan_name} Plan</h3>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <p className="text-gray-500">Start Date</p>
+                            <p className="font-medium">{formatDate(plan.start_date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Expiry Date</p>
+                            <p className="font-medium">{formatDate(plan.expire_date)}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-indigo-600 h-2.5 rounded-full"
+                              style={{ width: `${calculatePlanProgress(plan.start_date, plan.expire_date)}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 text-right">
+                            {calculateDaysRemaining(plan.expire_date)} days remaining
+                          </p>
+                        </div>
+                        <button
+                          className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300 text-sm"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Processing...' : 'Upgrade Plan'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-3">No active membership</p>
+                    <button
+                      className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300 text-sm"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Processing...' : 'Subscribe Now'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -244,6 +339,27 @@ function UserProfile() {
       </div>
     </div>
   );
+}
+
+// Helper functions
+function calculatePlanProgress(startDate, endDate) {
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  const now = new Date().getTime();
+
+  if (now >= end) return 100;
+  if (now <= start) return 0;
+
+  const total = end - start;
+  const elapsed = now - start;
+  return Math.round((elapsed / total) * 100);
+}
+
+function calculateDaysRemaining(endDate) {
+  const end = new Date(endDate).getTime();
+  const now = new Date().getTime();
+  const diff = end - now;
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 export default UserProfile;
