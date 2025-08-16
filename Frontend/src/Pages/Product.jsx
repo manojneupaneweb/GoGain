@@ -15,7 +15,11 @@ function ProductListing() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [categories, setCategories] = useState(['all']);
 
-  const { setCartCount } = useCart();
+  const { cartItems, setCartItems, setCartCount } = useCart();
+const handleAddtoCart = (product) => {
+  addToCart(product, cartItems, setCartItems, setCartCount);
+};
+
 
   // Fetch products from API
   useEffect(() => {
@@ -23,7 +27,6 @@ function ProductListing() {
       try {
         setLoading(true);
         const response = await axios.get("/api/v1/product/getallproduct");
-        console.log('Fetched products:', response.data);
 
         const productsData = response.data.data;
         setProducts(productsData);
@@ -235,7 +238,7 @@ function ProductListing() {
                     <p className="text-sm text-gray-500 capitalize mt-1">{product.category}</p>
                     <button
                       className="mt-4 w-full bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition duration-300"
-                      onClick={() => addToCart(product, 1, setCartCount)}
+                      onClick={() => handleAddtoCart (product, 1, setCartCount)}
                     >
                       Add to Cart
                     </button>

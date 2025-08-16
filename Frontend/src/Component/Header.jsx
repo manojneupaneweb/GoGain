@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import {  ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaBars, FaTimes, FaUser, FaDumbbell, FaChevronDown, FaShoppingCart } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +23,8 @@ function Header() {
   const [otpTimer, setOtpTimer] = useState(300);
   const [canResendOTP, setCanResendOTP] = useState(false);
   // const otpTimerRef = useRef(null);
+  const { cartCount } = useCart();
+ 
 
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -55,7 +57,7 @@ function Header() {
   // Track current URL and set active link based on it
   useEffect(() => {
     fetchUserData();
-    
+
     // Set active link based on current URL path
     const currentPath = window.location.pathname;
     if (currentPath === '/' || currentPath === '/home') {
@@ -125,7 +127,6 @@ function Header() {
     />
   );
 
-  const { cartCount } = useCart();
 
   return (
     <>
@@ -146,8 +147,8 @@ function Header() {
         <div className="container mx-auto px-4 md:px-10 py-4">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <motion.a 
-              href="/" 
+            <motion.a
+              href="/"
               className="flex items-center group"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -157,9 +158,9 @@ function Header() {
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center"
               >
-                  <motion.div>
-                    <FaDumbbell className="text-orange-500 text-2xl mr-3 transition-all duration-300 group-hover:text-orange-400 drop-shadow-lg" />
-                  </motion.div>
+                <motion.div>
+                  <FaDumbbell className="text-orange-500 text-2xl mr-3 transition-all duration-300 group-hover:text-orange-400 drop-shadow-lg" />
+                </motion.div>
                 <h1 className="text-2xl font-black bg-gradient-to-r from-orange-500 via-yellow-400 to-orange-600 bg-clip-text text-transparent tracking-tight">
                   GoGain
                 </h1>
@@ -192,21 +193,18 @@ function Header() {
             {/* Cart and Auth Section */}
             <div className="hidden md:flex items-center space-x-6">
               {/* Cart */}
-              <motion.div 
+              <motion.div
                 className="relative"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <a 
-                  href="/cart" 
+                <a
+                  href="/cart"
                   className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 px-3 py-2 rounded-lg text-gray-200 hover:text-white transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl group"
                 >
-                  <motion.div
-                    whileHover={{ rotate: 10 }}
-                    className="relative"
-                  >
+                  <motion.div whileHover={{ rotate: 10 }} className="relative">
                     <FaShoppingCart className="text-lg group-hover:text-orange-400 transition-colors duration-300" />
-                    <motion.span 
+                    <motion.span
                       className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-lg"
                       animate={{ scale: cartCount > 0 ? [1, 1.2, 1] : 1 }}
                       transition={{ duration: 0.3 }}
@@ -229,7 +227,7 @@ function Header() {
                     onClick={() => setShowLogin(true)}
                     className="px-5 py-2 rounded-lg hover:bg-gray-700 transition-all duration-300 flex items-center font-medium text-gray-200 hover:text-white group border border-gray-600 hover:border-gray-500"
                   >
-                    <FaUser className="mr-2 group-hover:text-blue-400 transition-colors duration-300 text-sm" /> 
+                    <FaUser className="mr-2 group-hover:text-blue-400 transition-colors duration-300 text-sm" />
                     LOGIN
                   </motion.button>
                   <motion.button
@@ -247,8 +245,8 @@ function Header() {
             {/* Mobile Section */}
             <div className="md:hidden flex items-center space-x-4">
               {/* Mobile Cart */}
-              <motion.a 
-                href="/cart" 
+              <motion.a
+                href="/cart"
                 className="relative text-white hover:text-orange-400 transition-colors duration-300"
                 whileTap={{ scale: 0.9 }}
               >
@@ -324,7 +322,7 @@ function Header() {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="md:hidden overflow-hidden border-t border-gray-700 mt-4"
               >
-                <motion.div 
+                <motion.div
                   className="flex flex-col space-y-2 pt-6 pb-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -619,11 +617,10 @@ const NavLink = ({ link, label, path, activeLink, onClick }) => {
         e.preventDefault();
         onClick(link);
       }}
-      className={`relative px-4 py-2 font-semibold transition-all duration-300 cursor-pointer rounded-lg group ${
-        isActive 
-          ? 'text-orange-400 bg-gradient-to-r from-orange-500/20 to-transparent' 
+      className={`relative px-4 py-2 font-semibold transition-all duration-300 cursor-pointer rounded-lg group ${isActive
+          ? 'text-orange-400 bg-gradient-to-r from-orange-500/20 to-transparent'
           : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-      }`}
+        }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.95 }}
     >
@@ -654,11 +651,10 @@ const MobileNavLink = ({ link, label, path, activeLink, onClick }) => {
         e.preventDefault();
         onClick(link);
       }}
-      className={`px-6 py-4 text-left rounded-xl transition-all duration-300 cursor-pointer font-bold mx-2 ${
-        isActive
+      className={`px-6 py-4 text-left rounded-xl transition-all duration-300 cursor-pointer font-bold mx-2 ${isActive
           ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30'
           : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:text-white'
-      }`}
+        }`}
       whileHover={{ scale: 1.02, x: 5 }}
       whileTap={{ scale: 0.98 }}
     >

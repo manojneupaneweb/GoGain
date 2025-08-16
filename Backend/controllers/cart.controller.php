@@ -4,6 +4,7 @@ require_once __DIR__ . '/../utils/Cloudinary.php';
 require_once __DIR__ . '/../config/db.php';
 
 require 'vendor/autoload.php';
+
 use Ramsey\Uuid\Uuid;
 
 class CartController
@@ -39,8 +40,9 @@ class CartController
             if ($stmt->fetch()) {
                 http_response_code(200);
                 echo json_encode(['status' => 'info', 'message' => 'Product already in cart']);
-                return;
+                exit; // stop execution here
             }
+
 
             // Insert new item
             $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
@@ -58,6 +60,7 @@ class CartController
                     'quantity' => $quantity
                 ]
             ]);
+            exit;
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Server error', 'details' => $e->getMessage()]);
@@ -66,20 +69,17 @@ class CartController
 
     public function GetCartItem()
     {
-        session_start(); // Ensure session is started
+        header('Content-Type: application/json');
 
-        $user_id = $_SESSION['user_id'] ?? null;
-
-        if (!$user_id) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'User ID is required']);
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized login function']);
             return;
         }
 
+        global $pdo;
         try {
-            global $pdo;
-
-            // Join cart with products to fetch product details
+            $userId = $_SESSION['user_id'];
             $stmt = $pdo->prepare("
             SELECT 
                 cart.id AS cart_id,
@@ -93,9 +93,10 @@ class CartController
                 (cart.quantity * products.price) AS total_price
             FROM cart
             INNER JOIN products ON cart.product_id = products.id
+            WHERE cart.user_id = :user_id
         ");
+            $stmt->execute(['user_id' => $userId]);
 
-            $stmt->execute();
             $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Calculate cart summary
@@ -115,6 +116,7 @@ class CartController
                     ]
                 ]
             ]);
+            exit;
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([
@@ -123,6 +125,7 @@ class CartController
             ]);
         }
     }
+
 
     public function updateCartQuantity($productId)
     {
@@ -177,7 +180,6 @@ class CartController
                     'message' => 'Cart item not found or quantity unchanged'
                 ]);
             }
-
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([
@@ -237,7 +239,7 @@ class CartController
                     'message' => 'Failed to delete item from cart.'
                 ]);
             }
-
+            exit;
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([
@@ -247,12 +249,6 @@ class CartController
             ]);
         }
     }
-
-
-
-
-
-
 }
 
 class OrderController
@@ -391,7 +387,6 @@ class OrderController
             ]);
         }
     }
-
 }
 
 
@@ -403,7 +398,7 @@ class OrderController
 
 class PlanController
 {
-
+    private $pdo;
     public function __construct($db)
     {
         $this->pdo = $db;
@@ -497,9 +492,4 @@ class PlanController
             ]);
         }
     }
-
-
-
-
 }
-?>

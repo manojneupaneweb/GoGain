@@ -7,15 +7,16 @@ import { motion } from 'framer-motion';
 import { Link, redirect } from 'react-router-dom';
 import Loading from '../../Component/Loading';
 import { initiateEsewaPayment, initiateKhaltiPayment } from '../../utils/payment';
+import { useCart } from '../../utils/CartContext';
 
 function Cart() {
-    const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [subtotal, setSubtotal] = useState(0);
     const [shipping, setShipping] = useState(0);
     const [total, setTotal] = useState(0);
     const [showPaymentPopup, setShowPaymentPopup] = useState(false);
     const [activeTab, setActiveTab] = useState('esewa');
+    const { cartItems, setCartItems, setCartCount } = useCart();
 
     const fetchCartItems = async () => {
         try {
@@ -27,7 +28,6 @@ function Cart() {
                 withCredentials: true
             });
 
-            // Ensure we always have an array and properly formatted items
             const items = Array.isArray(response.data?.data?.items)
                 ? response.data.data.items.map(item => ({
                     ...item,
@@ -90,11 +90,13 @@ function Cart() {
         }
 
         try {
-            // Optimistic UI update
+            // Optimistically update UI first
             const updatedItems = cartItems.filter(item => item.product_id !== productId);
             setCartItems(updatedItems);
+            setCartCount(updatedItems.length);
             calculateTotals(updatedItems);
 
+            // Call backend to delete
             const token = localStorage.getItem('accessToken');
             await axios.delete(`/api/v1/cart/delete/${productId}`, {
                 headers: {
@@ -102,15 +104,14 @@ function Cart() {
                 },
                 withCredentials: true
             });
-
-            toast.success('Item removed from cart');
         } catch (error) {
-            // Revert on error
+            // Revert changes if delete fails
             fetchCartItems();
             toast.error(error.response?.data?.message || 'Error removing item');
             console.error('Remove item error:', error);
         }
     };
+
 
     useEffect(() => {
         fetchCartItems();
