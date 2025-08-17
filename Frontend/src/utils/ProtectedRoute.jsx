@@ -50,7 +50,7 @@ const TrannirProtectedRoute = ({ children }) => {
   useEffect(() => {
     const getUser = async () => {
       const userData = await fetchUser();
-      if (userData && userData.user.role === 'trannir') {
+      if (userData && userData.user.role === 'trainer') {
         setUser(userData);
       } else {
         navigate('/');

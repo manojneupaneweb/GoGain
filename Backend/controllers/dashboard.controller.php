@@ -3,6 +3,7 @@ require_once __DIR__ . '/../utils/Cloudinary.php';
 require_once __DIR__ . '/../config/db.php';
 
 require 'vendor/autoload.php';
+
 use Ramsey\Uuid\Uuid;
 
 class DashboardController
@@ -93,7 +94,6 @@ class DashboardController
                 'success' => true,
                 'data' => $dashboardData
             ]);
-
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([
@@ -318,7 +318,7 @@ class DashboardController
         }
     }
 
-public function getAllUserPlans()
+    public function getAllUserPlans()
     {
         global $pdo;
 
@@ -342,11 +342,4 @@ public function getAllUserPlans()
             ]);
         }
     }
-
-
-
-
-
-
-
 }

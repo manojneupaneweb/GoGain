@@ -143,7 +143,7 @@ const router = createBrowserRouter([
 
             // ✅ Trannir protected route (example)
             {
-                path: "/trannir/dashboard",
+                path: "/trainer-dashboard",
                 element: (
                     <TrannirProtectedRoute>
                         <TrannirDashboard />

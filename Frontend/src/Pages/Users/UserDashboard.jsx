@@ -1,272 +1,357 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, RadialBarChart, RadialBar,
-  AreaChart, Area, ScatterChart, Scatter, RadarChart, Radar, Treemap,
-  ComposedChart, FunnelChart, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, PolarGrid, PolarAngleAxis, PolarRadiusAxis
-} from 'recharts';
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const UserDashboard = () => {
-  const [userData, setUserData] = useState({
-    name: 'Alex Johnson',
-    membership: 'Premium',
-    joinDate: '2023-01-15',
-    nextPayment: '2023-07-15',
-    trainer: 'Sarah Miller',
-    trainerContact: 'sarah@gogain.com',
-    todayFocus: 'Leg Day',
-    workoutDuration: '75 mins',
-    caloriesBurned: 620,
-    currentStreak: 12
-  });
+  const userData = {
+    "userId": 10,
+    "name": "Rekha Lama",
+    "membership": "Premium",
+    "joinDate": "2025-01-15",
+    "height": "165 cm",
+    "weight": "62 kg",
+    "goal": "Build Strength & Tone",
+    "dailyData": [
+      { "date": "2025-08-16", "muscleGroup": "Chest", "exercise": "Bench Press", "sets": 3, "reps": 10, "weight": 45, "cardioMinutes": 0, "notes": "" },
+      { "date": "2025-08-16", "muscleGroup": "Cardio", "exercise": "Stair Climber", "sets": 0, "reps": 0, "weight": 0, "cardioMinutes": 15, "notes": "" },
+      { "date": "2025-08-15", "muscleGroup": "Legs", "exercise": "Squats", "sets": 4, "reps": 12, "weight": 60, "cardioMinutes": 0, "notes": "Felt strong today" },
+      { "date": "2025-08-15", "muscleGroup": "Cardio", "exercise": "Treadmill", "sets": 0, "reps": 0, "weight": 0, "cardioMinutes": 20, "notes": "" },
+      { "date": "2025-08-14", "muscleGroup": "Back", "exercise": "Lat Pulldown", "sets": 3, "reps": 10, "weight": 40, "cardioMinutes": 0, "notes": "" },
+      { "date": "2025-08-13", "muscleGroup": "Shoulders", "exercise": "Overhead Press", "sets": 3, "reps": 8, "weight": 25, "cardioMinutes": 0, "notes": "" },
+      { "date": "2025-08-12", "muscleGroup": "Arms", "exercise": "Bicep Curls", "sets": 3, "reps": 12, "weight": 15, "cardioMinutes": 0, "notes": "" }
+    ],
+    "progress": {
+      "strength": "+18%",
+      "endurance": "+25%",
+      "bodyFat": "22%",
+      "muscleMass": "+5%"
+    },
+    "upcomingSession": {
+      "date": "2025-08-18",
+      "time": "09:30 AM",
+      "trainer": "Alex Johnson",
+      "focus": "Full Body Workout"
+    }
+  };
 
-  const [stats, setStats] = useState({
-    workoutsThisWeek: 4,
-    avgWorkoutDuration: 68,
-    bodyFatChange: -2.3,
-    muscleMassChange: 1.7
-  });
+  // Process data for charts
+  const workoutFrequency = userData.dailyData.reduce((acc, workout) => {
+    const date = workout.date;
+    if (!acc[date]) {
+      acc[date] = { date, strength: 0, cardio: 0 };
+    }
+    if (workout.muscleGroup === 'Cardio') {
+      acc[date].cardio += workout.cardioMinutes;
+    } else {
+      acc[date].strength += workout.sets * workout.reps * workout.weight;
+    }
+    return acc;
+  }, {});
 
-  // Sample data for charts
-  const workoutData = [
-    { day: 'Mon', duration: 45, calories: 320, type: 'Cardio' },
-    { day: 'Tue', duration: 60, calories: 420, type: 'Strength' },
-    { day: 'Wed', duration: 30, calories: 280, type: 'Yoga' },
-    { day: 'Thu', duration: 75, calories: 580, type: 'Strength' },
-    { day: 'Fri', duration: 50, calories: 350, type: 'HIIT' },
-    { day: 'Sat', duration: 90, calories: 720, type: 'Strength' },
-    { day: 'Sun', duration: 0, calories: 0, type: 'Rest' }
-  ];
+  const workoutFrequencyData = Object.values(workoutFrequency).reverse();
 
-  const progressData = [
-    { month: 'Jan', weight: 78, bodyFat: 22 },
-    { month: 'Feb', weight: 76, bodyFat: 21 },
-    { month: 'Mar', weight: 75, bodyFat: 20.5 },
-    { month: 'Apr', weight: 74, bodyFat: 19.8 },
-    { month: 'May', weight: 73, bodyFat: 19.2 },
-    { month: 'Jun', weight: 72, bodyFat: 18.5 }
-  ];
-
-  const muscleGroupData = [
-    { name: 'Chest', value: 85 },
-    { name: 'Back', value: 75 },
-    { name: 'Legs', value: 90 },
-    { name: 'Shoulders', value: 80 },
-    { name: 'Arms', value: 70 },
-    { name: 'Core', value: 65 }
-  ];
-
-  useEffect(() => {
-    // Fetch actual user data
-    const fetchData = async () => {
-      const token = localStorage.getItem('accessToken');
-      try {
-        const response = await axios.get('/api/v1/user/dashboard', {
-          headers: { Authorization: `Bearer ${token}` }
+  const muscleGroupData = userData.dailyData
+    .filter(workout => workout.muscleGroup !== 'Cardio')
+    .reduce((acc, workout) => {
+      const existing = acc.find(item => item.name === workout.muscleGroup);
+      if (existing) {
+        existing.value += workout.sets * workout.reps * workout.weight;
+      } else {
+        acc.push({
+          name: workout.muscleGroup,
+          value: workout.sets * workout.reps * workout.weight
         });
-        setUserData(response.data.user);
-        setStats(response.data.stats);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
       }
-    };
-    fetchData();
-  }, []);
+      return acc;
+    }, []);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  // Calculate totals
+  const totalWorkouts = userData.dailyData.length;
+  const totalCardio = userData.dailyData.reduce((sum, workout) => sum + workout.cardioMinutes, 0);
+  const totalVolume = userData.dailyData
+    .filter(workout => workout.muscleGroup !== 'Cardio')
+    .reduce((sum, workout) => sum + (workout.sets * workout.reps * workout.weight), 0);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {userData.name}!</p>
-      </div>
+      <header className="bg-gradient-to-r from-indigo-900 to-purple-800 rounded-xl p-6 mb-6 shadow-lg">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white">FITNESS TRACKER</h1>
+            <p className="text-indigo-200">Welcome back, {userData.name}!</p>
+          </div>
+          <div className="mt-4 md:mt-0 flex items-center space-x-4">
+            <div className="bg-white bg-opacity-20 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div className="bg-white bg-opacity-20 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - User Info */}
-        <div className="space-y-6">
-          {/* User Profile Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-indigo-600">
-                  {userData.name.charAt(0)}
-                </span>
+        {/* User Profile Card */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-4 text-white">
+            <h2 className="text-xl font-bold">MY PROFILE</h2>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="bg-blue-100 rounded-full p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold">{userData.name}</h2>
-                <p className="text-indigo-600">{userData.membership} Member</p>
+                <h3 className="text-xl font-bold">{userData.name}</h3>
+                <p className="text-gray-600">{userData.membership} Member</p>
               </div>
             </div>
-            <div className="space-y-3">
+            
+            <div className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Height</span>
+                <span className="font-medium">{userData.height}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Weight</span>
+                <span className="font-medium">{userData.weight}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Goal</span>
+                <span className="font-medium text-blue-600">{userData.goal}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Member Since</span>
-                <span>{new Date(userData.joinDate).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Next Payment</span>
-                <span>{new Date(userData.nextPayment).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Current Streak</span>
-                <span>{userData.currentStreak} days</span>
+                <span className="font-medium">{new Date(userData.joinDate).toLocaleDateString()}</span>
               </div>
             </div>
+            
+            <button className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200">
+              Update Profile
+            </button>
           </div>
+        </div>
 
-          {/* Today's Focus */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Today's Focus</h3>
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-indigo-700 text-xl">{userData.todayFocus}</h4>
-                  <p className="text-gray-600">Recommended workout</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="bg-white p-2 rounded">
-                  <p className="text-sm text-gray-500">Duration</p>
-                  <p className="font-bold">{userData.workoutDuration}</p>
-                </div>
-                <div className="bg-white p-2 rounded">
-                  <p className="text-sm text-gray-500">Calories</p>
-                  <p className="font-bold">{userData.caloriesBurned}</p>
-                </div>
-              </div>
+        {/* Stats Overview */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-700 p-4 text-white">
+            <h2 className="text-xl font-bold">WORKOUT STATS</h2>
+          </div>
+          <div className="p-6 grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-3xl font-bold text-purple-600">{totalWorkouts}</div>
+              <div className="text-gray-600">Total Workouts</div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-3xl font-bold text-purple-600">{totalCardio} min</div>
+              <div className="text-gray-600">Cardio Time</div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-3xl font-bold text-purple-600">{totalVolume}</div>
+              <div className="text-gray-600">Total Volume</div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-3xl font-bold text-purple-600">{userData.dailyData.filter(w => w.muscleGroup !== 'Cardio').length}</div>
+              <div className="text-gray-600">Strength Workouts</div>
             </div>
           </div>
-
-          {/* Trainer Info */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Your Trainer</h3>
-            <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center">
-                <span className="text-xl font-bold text-purple-600">
-                  {userData.trainer.charAt(0)}
-                </span>
+          
+          <div className="px-6 pb-6">
+            <h3 className="font-bold mb-2">PROGRESS</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-600">Strength</span>
+                  <span className="font-medium">{userData.progress.strength}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: '18%' }}></div>
+                </div>
               </div>
               <div>
-                <h4 className="font-bold">{userData.trainer}</h4>
-                <p className="text-gray-600">{userData.trainerContact}</p>
-                <button className="mt-2 text-sm text-purple-600 hover:text-purple-800">
-                  Message Trainer
-                </button>
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-600">Endurance</span>
+                  <span className="font-medium">{userData.progress.endurance}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '25%' }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-600">Muscle Mass</span>
+                  <span className="font-medium">{userData.progress.muscleMass}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-purple-600 h-2 rounded-full" style={{ width: '5%' }}></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Middle Column - Charts */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Workout Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow-md p-4 text-center">
-              <p className="text-gray-500">Workouts This Week</p>
-              <p className="text-3xl font-bold text-indigo-600">{stats.workoutsThisWeek}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-4 text-center">
-              <p className="text-gray-500">Avg Duration</p>
-              <p className="text-3xl font-bold text-green-600">{stats.avgWorkoutDuration} min</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-4 text-center">
-              <p className="text-gray-500">Body Fat %</p>
-              <p className={`text-3xl font-bold ${stats.bodyFatChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stats.bodyFatChange}%
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-4 text-center">
-              <p className="text-gray-500">Muscle Mass</p>
-              <p className={`text-3xl font-bold ${stats.muscleMassChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                +{stats.muscleMassChange}%
-              </p>
-            </div>
+        {/* Upcoming Session */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-red-500 to-red-700 p-4 text-white">
+            <h2 className="text-xl font-bold">UPCOMING SESSION</h2>
           </div>
-
-          {/* Workout Duration Chart */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Weekly Workout Duration</h3>
-            <div className="w-full h-[300px]"> {/* Adjust height if needed */}
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={workoutData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorDuration" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="duration"
-                    stroke="#8884d8"
-                    fillOpacity={1}
-                    fill="url(#colorDuration)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+          <div className="p-6">
+            <div className="bg-red-50 rounded-lg p-4 mb-4">
+              <div className="text-2xl font-bold text-red-600">
+                {new Date(userData.upcomingSession.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </div>
+              <div className="text-gray-600">{userData.upcomingSession.time}</div>
             </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-gray-600">Focus Area</div>
+                  <div className="font-medium">{userData.upcomingSession.focus}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-gray-600">Trainer</div>
+                  <div className="font-medium">{userData.upcomingSession.trainer}</div>
+                </div>
+              </div>
+            </div>
+            
+            <button className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Reschedule</span>
+            </button>
           </div>
-
-          {/* Progress Charts */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {/* Weight & Body Fat Chart */}
-  <div className="bg-white rounded-xl shadow-md p-6">
-    <h3 className="text-lg font-semibold mb-4">Weight & Body Fat</h3>
-    <div className="w-full h-[400px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
-          data={progressData}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-        >
-          <CartesianGrid stroke="#f5f5f5" />
-          <XAxis dataKey="month" />
-          <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-          <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-          <Tooltip />
-          <Legend />
-          <Bar yAxisId="left" dataKey="weight" barSize={20} fill="#8884d8" />
-          <Line yAxisId="right" type="monotone" dataKey="bodyFat" stroke="#82ca9d" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-
-  {/* Muscle Group Focus Chart */}
-  <div className="bg-white rounded-xl shadow-md p-6">
-    <h3 className="text-lg font-semibold mb-4">Muscle Group Focus</h3>
-    <div className="w-full h-[400px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={muscleGroupData}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey="name" />
-          <PolarRadiusAxis />
-          <Radar
-            name="Progress"
-            dataKey="value"
-            stroke="#8884d8"
-            fill="#8884d8"
-            fillOpacity={0.6}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-</div>
         </div>
       </div>
+
+      {/* Charts Section */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Workout Frequency Chart */}
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-xl font-bold mb-4">WORKOUT FREQUENCY</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={workoutFrequencyData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="strength" fill="#4F46E5" name="Strength Volume" />
+                <Bar dataKey="cardio" fill="#10B981" name="Cardio (mins)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Muscle Group Distribution */}
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-xl font-bold mb-4">MUSCLE GROUP DISTRIBUTION</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={muscleGroupData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {muscleGroupData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Workouts */}
+      <div className="mt-8 bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 p-4 text-white">
+          <h2 className="text-xl font-bold">RECENT WORKOUTS</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Muscle Group</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exercise</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sets x Reps</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cardio</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {userData.dailyData.map((workout, index) => (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {new Date(workout.date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      workout.muscleGroup === 'Cardio' ? 'bg-green-100 text-green-800' : 
+                      workout.muscleGroup === 'Chest' ? 'bg-blue-100 text-blue-800' :
+                      workout.muscleGroup === 'Legs' ? 'bg-purple-100 text-purple-800' :
+                      workout.muscleGroup === 'Back' ? 'bg-red-100 text-red-800' :
+                      workout.muscleGroup === 'Shoulders' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-indigo-100 text-indigo-800'
+                    }`}>
+                      {workout.muscleGroup}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{workout.exercise}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {workout.sets > 0 ? `${workout.sets} x ${workout.reps}` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {workout.weight > 0 ? `${workout.weight} kg` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {workout.cardioMinutes > 0 ? `${workout.cardioMinutes} mins` : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };

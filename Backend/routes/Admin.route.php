@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/admin.middleware.php';
+require_once __DIR__ . '/../middleware/auth.middleware.php';
 require_once __DIR__ . '/../controllers/dashboard.controller.php';
 
 header('Content-Type: application/json');
@@ -41,7 +42,27 @@ try {
     elseif ($method === 'POST' && preg_match('/\/changestatus\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->changeOrderStatus();
-    } else {
+    }
+
+
+
+
+
+
+
+    //Trainner  access Dashboard
+    elseif ($method === 'GET' && preg_match('/\/getallusersfortrainer\/?$/', $uri)) {
+        checkAuth();
+        $DashboardController->getAllUsers();
+    }
+
+
+
+
+
+
+
+     else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);
     }
