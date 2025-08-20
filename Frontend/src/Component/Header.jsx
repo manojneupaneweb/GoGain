@@ -24,7 +24,7 @@ function Header() {
   const [canResendOTP, setCanResendOTP] = useState(false);
   // const otpTimerRef = useRef(null);
   const { cartCount } = useCart();
- 
+
 
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -487,22 +487,20 @@ const UserDropdown = ({ userData }) => {
           >
             {userData?.role === 'user' && (
               <>
-                <DropdownItem href="/profile">👤 MY PROFILE</DropdownItem>
-                <DropdownItem href="/dashboard">📊 VIEW DASHBOARD</DropdownItem>
-                <DropdownItem href="/myproduct">📦 PRODUCT STATUS</DropdownItem>
-                <DropdownItem href="/setting">⚙️ SETTINGS</DropdownItem>
+                <DropdownItem href="/profile">My profile</DropdownItem>
+                <DropdownItem href="/dashboard">View dashboard</DropdownItem>
+                <DropdownItem href="/myproduct">Product status</DropdownItem>
+                <DropdownItem href="/setting">Settings</DropdownItem>
               </>
             )}
             {userData?.role === 'trainer' && (
               <>
-                <DropdownItem href="/trainer-dashboard">💪 TRAINER DASHBOARD</DropdownItem>
-                <DropdownItem href="/products">📦 PRODUCT STATUS</DropdownItem>
-                <DropdownItem href="/trainees">👥 MY TRAINEES</DropdownItem>
-                <DropdownItem href="/progress">📈 MY PROGRESS</DropdownItem>
+                <DropdownItem href="/trainer-dashboard">Trainer dashboard</DropdownItem>
+                <DropdownItem href="/setting">Setting</DropdownItem>
               </>
             )}
             {userData?.role === 'admin' && (
-              <DropdownItem href="/admin/dashboard">🔧 ADMIN DASHBOARD</DropdownItem>
+              <DropdownItem href="/admin/dashboard">Admin dashboard</DropdownItem>
             )}
             <div className="border-t border-gray-700 my-2"></div>
             <motion.button
@@ -510,10 +508,11 @@ const UserDropdown = ({ userData }) => {
               onClick={handelLogout}
               className="block w-full text-left px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white font-medium transition-all duration-300 rounded-lg mx-1"
             >
-              🚪 LOGOUT
+              Logout
             </motion.button>
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );
@@ -553,35 +552,39 @@ const UserDropdownMobile = ({ userData }) => {
             <div className="px-4 py-2 text-orange-400 text-sm font-bold border-b border-gray-700">
               HI, {userData?.fullName?.toUpperCase() || userData?.email?.toUpperCase() || 'USER'}
             </div>
+
             {userData?.role === 'user' && (
               <>
-                <MobileDropdownItem href="/profile">👤 My Profile</MobileDropdownItem>
-                <MobileDropdownItem href="/dashboard">📊 Dashboard</MobileDropdownItem>
-                <MobileDropdownItem href="/myproduct">📦 Products</MobileDropdownItem>
-                <MobileDropdownItem href="/setting">⚙️ Settings</MobileDropdownItem>
+                <MobileDropdownItem href="/profile">My profile</MobileDropdownItem>
+                <MobileDropdownItem href="/dashboard">Dashboard</MobileDropdownItem>
+                <MobileDropdownItem href="/myproduct">Products</MobileDropdownItem>
+                <MobileDropdownItem href="/setting">Settings</MobileDropdownItem>
               </>
             )}
+
             {userData?.role === 'trainer' && (
               <>
-                <MobileDropdownItem href="/trainer-dashboard">💪 Trainer Dashboard</MobileDropdownItem>
-                <MobileDropdownItem href="/products">📦 Products</MobileDropdownItem>
-                <MobileDropdownItem href="/trainees">👥 Trainees</MobileDropdownItem>
-                <MobileDropdownItem href="/progress">📈 Progress</MobileDropdownItem>
+                <MobileDropdownItem href="/trainer-dashboard">Trainer dashboard</MobileDropdownItem>
+                <MobileDropdownItem href="/setting">Setting</MobileDropdownItem>
               </>
             )}
+
             {userData?.role === 'admin' && (
-              <MobileDropdownItem href="/admin/dashboard">🔧 Admin Dashboard</MobileDropdownItem>
+              <MobileDropdownItem href="/admin/dashboard">Admin dashboard</MobileDropdownItem>
             )}
+
             <div className="border-t border-gray-700 my-1"></div>
+
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handelLogout}
               className="px-4 py-2 text-left text-gray-300 hover:bg-red-600 hover:text-white font-medium transition-all duration-300 text-sm w-full"
             >
-              🚪 LOGOUT
+              Logout
             </motion.button>
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );
@@ -618,8 +621,8 @@ const NavLink = ({ link, label, path, activeLink, onClick }) => {
         onClick(link);
       }}
       className={`relative px-4 py-2 font-semibold transition-all duration-300 cursor-pointer rounded-lg group ${isActive
-          ? 'text-orange-400 bg-gradient-to-r from-orange-500/20 to-transparent'
-          : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+        ? 'text-orange-400 bg-gradient-to-r from-orange-500/20 to-transparent'
+        : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
         }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.95 }}
@@ -652,8 +655,8 @@ const MobileNavLink = ({ link, label, path, activeLink, onClick }) => {
         onClick(link);
       }}
       className={`px-6 py-4 text-left rounded-xl transition-all duration-300 cursor-pointer font-bold mx-2 ${isActive
-          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30'
-          : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:text-white'
+        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30'
+        : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:text-white'
         }`}
       whileHover={{ scale: 1.02, x: 5 }}
       whileTap={{ scale: 0.98 }}

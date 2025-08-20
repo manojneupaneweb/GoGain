@@ -12,12 +12,13 @@ const addToCart = async (product, cartItems, setCartItems, setCartCount) => {
     toast.error('Please log in to add items to your cart.');
     return;
   }
-
+  
   try {
     // Call backend to add product
     const res = await axios.post('/api/v1/cart/addtocart', {
       product_id: product.id,
       quantity: 1,
+      price: product.price,
     }, {
       headers: {
         Authorization: `Bearer ${token}`

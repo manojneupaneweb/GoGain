@@ -55,8 +55,17 @@ try {
         checkAuth();
         $DashboardController->getAllUsers();
     }
-
-
+    elseif ($method === 'POST' && preg_match('/\/daily-activity\/?$/', $uri)) {
+        checkAuth();
+        $DashboardController->activityHistory();
+    }
+    
+    
+    // users routes
+    elseif ($method === 'GET' && preg_match('/\/getuseractivity\/?$/', $uri)) {
+        checkAuth();
+        $DashboardController->getUserActivity();
+    }
 
 
 

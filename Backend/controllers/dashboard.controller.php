@@ -13,6 +13,7 @@ class DashboardController
     {
         $this->pdo = $pdo;
     }
+
     public function GetDashboard()
     {
         global $pdo;
@@ -289,7 +290,6 @@ class DashboardController
         }
     }
 
-
     public function changeOrderStatus()
     {
         global $pdo;
@@ -332,6 +332,169 @@ class DashboardController
             echo json_encode([
                 'success' => true,
                 'data' => $users
+            ]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function activityHistory()
+    {
+        global $pdo;
+
+        try {
+            // Trainer check
+            $trainer = $_SESSION['user_id'] ?? null;
+            if (!$trainer) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Read request body
+            $data = json_decode(file_get_contents("php://input"), true);
+            $userId = $data['userId'];
+            $date   = date('Y-m-d'); // just date, not full timestamp
+
+            // First check if same user already has activity for today
+            $checkStmt = $pdo->prepare("SELECT id FROM gym_user_activity WHERE userId = :userId AND DATE(date) = :date");
+            $checkStmt->execute([
+                ':userId' => $userId,
+                ':date'   => $date,
+            ]);
+            $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                // Update if already exists
+                $stmt = $pdo->prepare("
+                UPDATE gym_user_activity 
+                SET muscleGroup = :muscleGroup,
+                    exercise = :exercise,
+                    sets = :sets,
+                    reps = :reps,
+                    weight = :weight,
+                    cardioMinutes = :cardioMinutes,
+                    notes = :notes,
+                    strengthProgress = :strengthProgress,
+                    enduranceProgress = :enduranceProgress,
+                    bodyFat = :bodyFat,
+                    muscleMass = :muscleMass,
+                    trainer = :trainer,
+                    focus = :focus
+                WHERE id = :id
+            ");
+                $stmt->execute([
+                    ':muscleGroup'       => $data['muscleGroup'] ?? null,
+                    ':exercise'          => $data['exercise'] ?? null,
+                    ':sets'              => $data['sets'] ?? null,
+                    ':reps'              => $data['reps'] ?? null,
+                    ':weight'            => $data['weight'] ?? null,
+                    ':cardioMinutes'     => $data['cardioMinutes'] ?? null,
+                    ':notes'             => $data['notes'] ?? null,
+                    ':strengthProgress'  => $data['strengthProgress'] ?? null,
+                    ':enduranceProgress' => $data['enduranceProgress'] ?? null,
+                    ':bodyFat'           => $data['bodyFat'] ?? null,
+                    ':muscleMass'        => $data['muscleMass'] ?? null,
+                    ':trainer'           => $trainer,
+                    ':focus'             => $data['focus'] ?? null,
+                    ':id'                => $existing['id'],
+                ]);
+
+                http_response_code(200);
+                echo json_encode(['success' => true, 'message' => 'Activity updated successfully!']);
+            } else {
+                // Insert if not exists
+                $stmt = $pdo->prepare("
+                INSERT INTO gym_user_activity (
+                    userId, date, muscleGroup, exercise, sets, reps, weight, cardioMinutes, notes, 
+                    strengthProgress, enduranceProgress, bodyFat, muscleMass, trainer, focus, created_at
+                ) VALUES (
+                    :userId, :date, :muscleGroup, :exercise, :sets, :reps, :weight, :cardioMinutes, :notes, 
+                    :strengthProgress, :enduranceProgress, :bodyFat, :muscleMass, :trainer, :focus, NOW()
+                )
+            ");
+                $stmt->execute([
+                    ':userId'            => $userId,
+                    ':date'              => $date,
+                    ':muscleGroup'       => $data['muscleGroup'] ?? null,
+                    ':exercise'          => $data['exercise'] ?? null,
+                    ':sets'              => $data['sets'] ?? null,
+                    ':reps'              => $data['reps'] ?? null,
+                    ':weight'            => $data['weight'] ?? null,
+                    ':cardioMinutes'     => $data['cardioMinutes'] ?? null,
+                    ':notes'             => $data['notes'] ?? null,
+                    ':strengthProgress'  => $data['strengthProgress'] ?? null,
+                    ':enduranceProgress' => $data['enduranceProgress'] ?? null,
+                    ':bodyFat'           => $data['bodyFat'] ?? null,
+                    ':muscleMass'        => $data['muscleMass'] ?? null,
+                    ':trainer'           => $trainer,
+                    ':focus'             => $data['focus'] ?? null,
+                ]);
+
+                http_response_code(201);
+                echo json_encode(['success' => true, 'message' => 'Activity inserted successfully!']);
+            }
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database error', 'error' => $e->getMessage()]);
+        }
+    }
+
+
+    public function getUserActivity()
+    {
+        global $pdo;
+
+        try {
+            // Check if user is logged in
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Fetch user activities along with trainer info
+            $stmt = $pdo->prepare("
+            SELECT 
+                a.id,
+                a.date,
+                a.muscleGroup,
+                a.exercise,
+                a.sets,
+                a.reps,
+                a.weight,
+                a.cardioMinutes,
+                a.notes,
+                a.strengthProgress,
+                a.enduranceProgress,
+                a.bodyFat,
+                a.muscleMass,
+                a.trainer AS trainerId,
+                a.focus,
+                t.avatar AS trainerAvatar,
+                t.fullName AS trainerFullName,
+                t.email AS trainerEmail,
+                t.phone AS trainerPhone
+            FROM gym_user_activity a
+            LEFT JOIN users t ON a.trainer = t.id
+            WHERE a.userId = :userId
+        ");
+
+            $stmt->execute(['userId' => $userId]);
+            $activity = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'User activities fetched successfully!',
+                'data' => $activity,
+                'userId' => $userId
             ]);
         } catch (PDOException $e) {
             http_response_code(500);

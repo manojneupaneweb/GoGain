@@ -23,6 +23,7 @@ class CartController
         $user_id = $_SESSION['user_id'] ?? 1;
         $product_id = $data['product_id'] ?? null;
         $quantity = $data['quantity'] ?? 1;
+        $price = $data['price'] ?? 1;
 
         if (!$user_id || !$product_id) {
             http_response_code(400);
@@ -46,8 +47,8 @@ class CartController
 
             // Insert new item
             $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
-            $insert = $pdo->prepare("INSERT INTO cart (id, user_id, product_id, quantity) VALUES (?, ?, ?, ?)");
-            $insert->execute([$id, $user_id, $product_id, $quantity]);
+            $insert = $pdo->prepare("INSERT INTO cart (id, user_id, product_id,  quantity, price) VALUES (?, ?, ?,?, ?)");
+            $insert->execute([$id, $user_id,  $product_id, $quantity, $price,]);
 
             http_response_code(201);
             echo json_encode([
@@ -57,7 +58,8 @@ class CartController
                     'id' => $id,
                     'user_id' => $user_id,
                     'product_id' => $product_id,
-                    'quantity' => $quantity
+                    'quantity' => $quantity,
+                    'price' => $price
                 ]
             ]);
             exit;
@@ -125,7 +127,6 @@ class CartController
             ]);
         }
     }
-
 
     public function updateCartQuantity($productId)
     {
@@ -274,53 +275,55 @@ class OrderController
             return ['error' => 'User not logged in'];
         }
 
-        $paymentStatus = $input['payment_status'] ?? 'pending';
-        $orderStatus = $input['order_status'] ?? 'pending';
-        $address = $input['address'] ?? '';
+        $paymentStatus = $input['payment_status'] ?? 'complete';
+        $orderStatus   = $input['order_status'] ?? 'pending';
 
-        // 1. Get cart items for the user
         $cartItems = $this->getCartItemsByUser($userId);
         if (empty($cartItems)) {
             return ['error' => 'Cart is empty'];
         }
 
-        // 2. Calculate total price from cart items
-        $totalPrice = 0;
+        $createdOrders = [];
+
         foreach ($cartItems as $item) {
-            $totalPrice += $item['price'] * $item['quantity'];
+            $totalPrice = $item['price'] * $item['quantity'];
+            $id = $this->generateUUID();
+
+            $sql = "INSERT INTO orders (id, user_id, product_id, quantity, total_price, payment_status, order_status)
+            VALUES (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status)";
+            $stmt = $this->pdo->prepare($sql);
+            $success = $stmt->execute([
+                ':id'             => $id,
+                ':user_id'        => $userId,
+                ':product_id'     => $item['product_id'],
+                ':quantity'       => $item['quantity'],
+                ':total_price'    => $totalPrice,
+                ':payment_status' => $paymentStatus,
+                ':order_status'   => $orderStatus,
+            ]);
+
+            if ($success) {
+                $createdOrders[] = [
+                    'order_id'   => $id,
+                    'product_id' => $item['product_id'],
+                    'quantity'   => $item['quantity'],
+                    'price'      => $item['price'],
+                    'total'      => $totalPrice
+                ];
+            }
         }
 
-        // 3. Verify payment amount from frontend matches calculated total price
-        $paymentAmount = $input['payment_amount'] ?? 0;
-        if ($paymentAmount != $totalPrice) {
-            return ['error' => 'Payment amount mismatch'];
-        }
 
-        // 4. Create order record
-        $orderId = $this->createOrderRecord([
-            'id' => $this->generateUUID(),
-            'user_id' => $userId,
-            'quantity' => array_sum(array_column($cartItems, 'quantity')),
-            'payment_status' => $paymentStatus,
-            'order_status' => $orderStatus,
-            'address' => $address,
-            'total_price' => $totalPrice,
-        ]);
-
-        if (!$orderId) {
-            return ['error' => 'Order creation failed'];
-        }
-
-        // 5. (Optional) Insert order items if you have order_items table
-        // foreach ($cartItems as $item) {
-        //     $this->createOrderItem($orderId, $item);
-        // }
-
-        // 6. Delete cart items for the user
+        // after inserting all, clear cart
         $this->deleteCartItemsByUser($userId);
 
-        return ['success' => true, 'order_id' => $orderId];
+        return [
+            'success' => true,
+            'orders'  => $createdOrders
+        ];
     }
+
+
 
     public function getCartItemsByUser($userId)
     {
@@ -328,22 +331,6 @@ class OrderController
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function createOrderRecord($orderData)
-    {
-        $sql = "INSERT INTO orders (id, user_id, quantity, payment_status, order_status, address)
-                VALUES (:id, :user_id, :quantity, :payment_status, :order_status, :address)";
-        $stmt = $this->pdo->prepare($sql);
-        $success = $stmt->execute([
-            ':id' => $orderData['id'],
-            ':user_id' => $orderData['user_id'],
-            ':quantity' => $orderData['quantity'],
-            ':payment_status' => $orderData['payment_status'],
-            ':order_status' => $orderData['order_status'],
-            ':address' => $orderData['address'],
-        ]);
-        return $success ? $orderData['id'] : false;
     }
 
     public function deleteCartItemsByUser($userId)

@@ -8,8 +8,11 @@ import { Link, redirect } from 'react-router-dom';
 import Loading from '../../Component/Loading';
 import { initiateEsewaPayment, initiateKhaltiPayment } from '../../utils/payment';
 import { useCart } from '../../utils/CartContext';
+import { useNavigate } from 'react-router-dom';
+
 
 function Cart() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [subtotal, setSubtotal] = useState(0);
     const [shipping, setShipping] = useState(0);
@@ -17,13 +20,14 @@ function Cart() {
     const [showPaymentPopup, setShowPaymentPopup] = useState(false);
     const [activeTab, setActiveTab] = useState('esewa');
     const { cartItems, setCartItems, setCartCount } = useCart();
+    const token = localStorage.getItem('accessToken');
 
     const fetchCartItems = async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/v1/cart/getcartitem', {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+                    Authorization: `Bearer ${token}`
                 },
                 withCredentials: true
             });
@@ -137,6 +141,30 @@ function Cart() {
         setShowPaymentPopup(false);
     };
 
+    const handleNoPaySubmit = async () => {
+        setShowPaymentPopup(false);
+
+        try {
+            const orderResponse = await axios.post(
+                "/api/v1/cart/createorder",
+                { decoded: 'nopay' },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            toast.success("Order placed successfully without payment!");
+
+            setTimeout(() => {
+                navigate('/profile');
+            }, 3000);
+
+            console.log(`Order Response:`, orderResponse.data);
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to place order. Please try again.");
+        }
+    };
+
+
     if (loading) {
         return <Loading />;
     }
@@ -191,6 +219,7 @@ function Cart() {
                                             />
                                         </span>
                                     </button>
+
                                     <button
                                         className={`flex-1 py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'khalti'
                                             ? 'text-purple-600 border-b-2 border-purple-600 font-semibold'
@@ -210,29 +239,38 @@ function Cart() {
                                             />
                                         </span>
                                     </button>
+
+                                    <button
+                                        className={`flex-1 py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'nopay'
+                                            ? 'text-purple-600 border-b-2 border-purple-600 font-semibold'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                        onClick={() => setActiveTab('nopay')}
+                                    >
+                                        <span className="flex items-center justify-center gap-2">No Pay</span>
+                                    </button>
                                 </div>
 
                                 <div className="mt-6 space-y-4">
-                                    {activeTab === 'esewa' ? (
-                                        <>
+                                    {activeTab === 'esewa' && (
+                                        <div>
                                             <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
                                                 <h4 className="font-medium text-orange-800 mb-2">Test Credentials</h4>
                                                 <ul className="text-sm text-gray-600 space-y-1">
                                                     <li className="flex items-start">
                                                         <span className="text-orange-500 mr-2">•</span>
-                                                        <span>ID: <span className="font-mono">9806800001-5</span></span>
+                                                        ID: <span className="font-mono">9806800001-5</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="text-orange-500 mr-2">•</span>
-                                                        <span>Password: <span className="font-mono">Nepal@123</span></span>
+                                                        Password: <span className="font-mono">Nepal@123</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="text-orange-500 mr-2">•</span>
-                                                        <span>MPIN: <span className="font-mono">1122</span></span>
+                                                        MPIN: <span className="font-mono">1122</span>
                                                     </li>
                                                 </ul>
                                             </div>
-
                                             <div className="pt-2">
                                                 <p className="text-gray-500 text-sm mb-4">
                                                     You'll be redirected to eSewa to complete your payment of
@@ -246,27 +284,28 @@ function Cart() {
                                                     Pay with eSewa
                                                 </button>
                                             </div>
-                                        </>
-                                    ) : (
-                                        <>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'khalti' && (
+                                        <div>
                                             <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
                                                 <h4 className="font-medium text-purple-800 mb-2">Test Credentials</h4>
                                                 <ul className="text-sm text-gray-600 space-y-1">
                                                     <li className="flex items-start">
                                                         <span className="text-purple-500 mr-2">•</span>
-                                                        <span>Mobile: <span className="font-mono">9800000000-9800000005</span></span>
+                                                        Mobile: <span className="font-mono">9800000000-9800000005</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="text-purple-500 mr-2">•</span>
-                                                        <span>MPIN: <span className="font-mono">1111</span></span>
+                                                        MPIN: <span className="font-mono">1111</span>
                                                     </li>
                                                     <li className="flex items-start">
                                                         <span className="text-purple-500 mr-2">•</span>
-                                                        <span>OTP: <span className="font-mono">987654</span></span>
+                                                        OTP: <span className="font-mono">987654</span>
                                                     </li>
                                                 </ul>
                                             </div>
-
                                             <div className="pt-2">
                                                 <p className="text-gray-500 text-sm mb-4">
                                                     You'll be redirected to Khalti to complete your payment of
@@ -280,16 +319,35 @@ function Cart() {
                                                     Pay with Khalti
                                                 </button>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
+
+                                    {activeTab === 'nopay' && (
+                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+                                            <h4 className="font-medium text-gray-800 mb-2">Payment Not Required</h4>
+                                            <p className="text-gray-600 text-sm mb-4">
+                                                This option is provided only if eSewa or Khalti are temporarily unavailable. You can proceed with without completing a payment.
+                                            </p>
+                                            <span className="font-bold text-gray-700">Total: रु. {total}</span>
+                                            <button
+                                                onClick={handleNoPaySubmit}
+                                                className="w-full mt-10 bg-orange-600 hover:bg-orange-500 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200"
+                                            >
+                                                Pay with No Pay
+                                            </button>
+                                        </div>
+                                    )}
+
                                 </div>
 
+                                {/* Security Notice */}
                                 <div className="mt-6 pt-4 border-t border-gray-100">
                                     <p className="text-xs text-gray-400 text-center">
                                         Your payment is secured with end-to-end encryption
                                     </p>
                                 </div>
                             </div>
+
                         </motion.div>
                     </motion.div>
                 )}

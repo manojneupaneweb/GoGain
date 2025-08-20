@@ -23,6 +23,8 @@ const PaymentSuccess = () => {
         setLoading(false);
         return;
       }
+      console.log(`Payment Data:`, dataParam);
+      
 
       try {
         const decoded = JSON.parse(atob(dataParam));

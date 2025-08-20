@@ -2,6 +2,7 @@ import { FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane } from 'react-icon
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useState } from 'react';
+import { toast,ToastContainer } from 'react-toastify';
 
 const Contact = () => {
   const contactInfo = [
@@ -31,8 +32,6 @@ const Contact = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0); // in seconds
 
   // Handle form input changes
@@ -48,17 +47,28 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError('');
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setIsSubmitting(false);
+      toast.error('Please Login !');
+      return;
+    }
 
     try {
+      // Verify user
+      await axios.get('/api/v1/user/verify-user', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Submit contact form
       const response = await axios.post('/api/v1/user/contactform', formData);
+
       if (response.data.success) {
-        setSubmitSuccess(true);
-        // Start 5 minute cooldown (300 seconds)
         setCooldown(300);
-        // Start countdown timer
+
         const timer = setInterval(() => {
-          setCooldown(prev => {
+          setCooldown((prev) => {
             if (prev <= 1) {
               clearInterval(timer);
               return 0;
@@ -66,22 +76,29 @@ const Contact = () => {
             return prev - 1;
           });
         }, 1000);
+
         // Reset form
         setFormData({
           name: '',
           email: '',
           subject: '',
-          message: ''
+          message: '',
         });
       } else {
-        setError(response.data.message || 'Failed to send message');
+        toast.error(response.data.message || 'Failed to send message');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred while sending your message');
+      if (err.response?.status === 401) {
+        localStorage.removeItem('accessToken');
+        toast.error('User verification failed. Please login.');
+      } else {
+        toast.error(err.response?.data?.message || 'An error occurred');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   // Format time from seconds to MM:SS
   const formatTime = (seconds) => {
@@ -94,7 +111,7 @@ const Contact = () => {
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -108,14 +125,14 @@ const Contact = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Information */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="space-y-8"
           >
             {contactInfo.map((item, index) => (
-              <div 
+              <div
                 key={index}
                 className="flex items-start p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
               >
@@ -125,8 +142,8 @@ const Contact = () => {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.title}</h3>
                   {item.link ? (
-                    <a 
-                      href={item.link} 
+                    <a
+                      href={item.link}
                       className="text-gray-600 hover:text-orange-500 transition-colors duration-300"
                     >
                       {item.value}
@@ -140,41 +157,26 @@ const Contact = () => {
 
             {/* Map Embed */}
             <div className="overflow-hidden rounded-xl shadow-md">
-              <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.383549968055!2d84.10172631506212!3d27.70544438279301!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994fbb5e5e9b6a5%3A0x3a3c3d3d3d3d3d3d!2sKawasoti-2%2C%20Panchakanya%20Chowk%2C%20Nawalpur%2C%20Gandaki%20Province%2C%20Nepal!5e0!3m2!1sen!2snp!4v1620000000000!5m2!1sen!2snp" 
-                width="100%" 
-                height="300" 
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.383549968055!2d84.10172631506212!3d27.70544438279301!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994fbb5e5e9b6a5%3A0x3a3c3d3d3d3d3d3d!2sKawasoti-2%2C%20Panchakanya%20Chowk%2C%20Nawalpur%2C%20Gandaki%20Province%2C%20Nepal!5e0!3m2!1sen!2snp!4v1620000000000!5m2!1sen!2snp"
+                width="100%"
+                height="300"
                 style={{ border: 0 }}
-                allowFullScreen="" 
-                loading="lazy" 
+                allowFullScreen=""
+                loading="lazy"
                 className="rounded-xl"
               ></iframe>
             </div>
           </motion.div>
 
           {/* Contact Form */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
           >
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h3>
-            {submitSuccess && (
-              <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-lg">
-                <p>Your message has been sent successfully!</p>
-                {cooldown > 0 && (
-                  <p className="mt-2 text-sm">
-                    You can send another message in: {formatTime(cooldown)}
-                  </p>
-                )}
-              </div>
-            )}
-            {error && (
-              <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
-                {error}
-              </div>
-            )}
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">

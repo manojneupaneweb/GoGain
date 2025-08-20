@@ -73,31 +73,31 @@ const FEATURES = [
 const TRAINERS = [
   { 
     img: trainer1, 
-    name: 'Alex Johnson', 
+    name: 'Ram Choudari', 
     specialty: 'Strength Training', 
     rating: 5, 
-    bio: 'Former competitive powerlifter with 10+ years coaching experience', 
+    bio: 'Former competitive weightlifter with 10+ years coaching experience in Kathmandu', 
     social: { facebook: '#', instagram: '#', twitter: '#', linkedin: '#' } 
   },
   { 
     img: trainer2, 
-    name: 'Sarah Miller', 
+    name: 'Sagar Gurung', 
     specialty: 'Yoga & Flexibility', 
     rating: 5, 
-    bio: 'Certified yoga instructor with expertise in mobility and rehabilitation', 
+    bio: 'Certified yoga instructor specializing in mobility and rehabilitation', 
     social: { facebook: '#', instagram: '#', twitter: '#', linkedin: '#' } 
   },
   { 
     img: trainer3, 
-    name: 'Mike Rodriguez', 
+    name: 'Ramesh Thapa', 
     specialty: 'HIIT & Cardio', 
     rating: 4, 
-    bio: 'Military fitness specialist creating high-intensity programs', 
+    bio: 'Fitness trainer with military-style HIIT programs', 
     social: { facebook: '#', instagram: '#', twitter: '#', linkedin: '#' } 
   },
   { 
     img: trainer4, 
-    name: 'Emma Wilson', 
+    name: 'Krishna Shrestha', 
     specialty: 'Pilates', 
     rating: 5, 
     bio: 'Dancer-turned-trainer focusing on core strength and posture', 
@@ -105,7 +105,7 @@ const TRAINERS = [
   },
   { 
     img: trainer5, 
-    name: 'David Chen', 
+    name: 'Bikash Koirala', 
     specialty: 'Olympic Weightlifting', 
     rating: 4, 
     bio: 'National champion weightlifter and certified sports nutritionist', 
@@ -113,13 +113,22 @@ const TRAINERS = [
   },
   { 
     img: trainer6, 
-    name: 'Lisa Park', 
+    name: 'Suman Neupane', 
     specialty: 'Functional Training', 
     rating: 5, 
-    bio: 'Specializes in movement patterns for everyday life activities', 
+    bio: 'Specializes in functional training for everyday life and movement patterns', 
     social: { facebook: '#', instagram: '#', twitter: '#', linkedin: '#' } 
-  }
+  },
+  // { 
+  //   img: trainer7, 
+  //   name: 'Suman Neupane', 
+  //   specialty: 'Functional Training', 
+  //   rating: 5, 
+  //   bio: 'Specializes in functional training for everyday life and movement patterns', 
+  //   social: { facebook: '#', instagram: '#', twitter: '#', linkedin: '#' } 
+  // }
 ];
+
 
 const SOCIAL_ICONS = {
   facebook: { icon: FaFacebook, color: 'bg-blue-600 hover:bg-blue-700' },
