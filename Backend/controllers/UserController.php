@@ -441,6 +441,25 @@ class UserController
             $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $stmt->execute([$hashedPassword, $userId]);
 
+            $to = $user['email']; // Make sure you have the user's email
+            $subject = "Password Changed Successfully";
+
+            $messageBody = "
+                <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
+                    <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
+                    <p>Your password has been successfully updated.</p>
+
+                    <p>If you did not perform this change, please <a href='https://gogain.com/contact-support' style='color: #2E86C1; text-decoration: none;'>contact our support team</a> immediately.</p>
+
+                    <p style='margin-top: 30px; font-weight: bold; color: #2E86C1;'>Stay safe!</p>
+                    <p style='font-size: 12px; color: #777;'>This is an automated email, please do not reply directly.</p>
+                </div>
+                ";
+
+            // Send mail
+            sendMail($to, $subject, $messageBody);
+
+
             echo json_encode([
                 'success' => true,
                 'message' => 'Password changed successfully'
@@ -524,9 +543,7 @@ class UserController
         o.quantity,
         o.order_status,
         o.payment_status,
-        o.address,
-        o.createdAt AS createdAt,
-        o.updatedAt AS updatedAt,
+        o.created_at AS created_at,
         p.id AS product_id,
         p.name AS product_name,
         p.price AS product_price,
@@ -534,7 +551,7 @@ class UserController
     FROM orders o
     LEFT JOIN products p ON o.product_id = p.id
     WHERE o.user_id = ?
-    ORDER BY o.createdAt DESC
+    ORDER BY o.created_at DESC
     LIMIT 4
 ");
 
@@ -593,9 +610,7 @@ class UserController
         o.quantity,
         o.order_status,
         o.payment_status,
-        o.address,
-        o.createdAt AS createdAt,
-        o.updatedAt AS updatedAt,
+        o.created_at AS created_at,
         p.name AS product_name,
         p.price AS product_price,
         p.image AS product_image

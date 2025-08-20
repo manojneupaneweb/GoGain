@@ -145,7 +145,7 @@ function Cart() {
         setShowPaymentPopup(false);
 
         try {
-            const orderResponse = await axios.post(
+            await axios.post(
                 "/api/v1/cart/createorder",
                 { decoded: 'nopay' },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -157,7 +157,6 @@ function Cart() {
                 navigate('/profile');
             }, 3000);
 
-            console.log(`Order Response:`, orderResponse.data);
         } catch (error) {
             console.error(error);
             toast.error("Failed to place order. Please try again.");

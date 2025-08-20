@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/cart.model.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../middleware/email.middleware.php';
 
 require 'vendor/autoload.php';
 
@@ -258,51 +259,58 @@ class OrderController
 
     public function __construct($db)
     {
-        $this->pdo = $db;  // Assign the PDO instance here
+        $this->pdo = $db;
     }
 
     public function createOrder()
     {
         session_start();
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!$input) {
-            return ['error' => 'Invalid input'];
-        }
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) {
+                throw new Exception("Invalid input data");
+            }
 
-        $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            return ['error' => 'User not logged in'];
-        }
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId) {
+                throw new Exception("User not logged in");
+            }
 
-        $paymentStatus = $input['payment_status'] ?? 'complete';
-        $orderStatus   = $input['order_status'] ?? 'pending';
+            $paymentStatus = $input['payment_status'] ?? 'complete';
+            $orderStatus   = $input['order_status'] ?? 'pending';
 
-        $cartItems = $this->getCartItemsByUser($userId);
-        if (empty($cartItems)) {
-            return ['error' => 'Cart is empty'];
-        }
+            $cartItems = $this->getCartItemsByUser($userId);
+            if (empty($cartItems)) {
+                throw new Exception("Cart is empty");
+            }
 
-        $createdOrders = [];
+            $createdOrders = [];
 
-        foreach ($cartItems as $item) {
-            $totalPrice = $item['price'] * $item['quantity'];
-            $id = $this->generateUUID();
+            foreach ($cartItems as $item) {
+                $totalPrice = $item['price'] * $item['quantity'];
+                $id = $this->generateUUID();
 
-            $sql = "INSERT INTO orders (id, user_id, product_id, quantity, total_price, payment_status, order_status)
-            VALUES (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status)";
-            $stmt = $this->pdo->prepare($sql);
-            $success = $stmt->execute([
-                ':id'             => $id,
-                ':user_id'        => $userId,
-                ':product_id'     => $item['product_id'],
-                ':quantity'       => $item['quantity'],
-                ':total_price'    => $totalPrice,
-                ':payment_status' => $paymentStatus,
-                ':order_status'   => $orderStatus,
-            ]);
+                $sql = "INSERT INTO orders 
+                        (id, user_id, product_id, quantity, total_price, payment_status, order_status) 
+                    VALUES 
+                        (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status)";
 
-            if ($success) {
+                $stmt = $this->pdo->prepare($sql);
+                $success = $stmt->execute([
+                    ':id'             => $id,
+                    ':user_id'        => $userId,
+                    ':product_id'     => $item['product_id'],
+                    ':quantity'       => $item['quantity'],
+                    ':total_price'    => $totalPrice,
+                    ':payment_status' => $paymentStatus,
+                    ':order_status'   => $orderStatus,
+                ]);
+
+                if (!$success) {
+                    throw new Exception("Failed to create order for product {$item['product_id']}");
+                }
+
                 $createdOrders[] = [
                     'order_id'   => $id,
                     'product_id' => $item['product_id'],
@@ -311,17 +319,98 @@ class OrderController
                     'total'      => $totalPrice
                 ];
             }
+
+            // Clear cart only after successful order creation
+            $this->deleteCartItemsByUser($userId);
+
+            // ✅ Fetch user info
+            $sqlUser = "SELECT fullName, email FROM users WHERE id = :id LIMIT 1";
+            $stmtUser = $this->pdo->prepare($sqlUser);
+            $stmtUser->execute([':id' => $userId]);
+            $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+            //fatch product 
+
+            if (!$user) {
+                throw new Exception("User not found");
+            }
+
+            // ✅ Prepare email
+            $to = $user['email'];
+            $subject = "Order Confirmation - Thank you for your purchase";
+
+            // Build table of ordered items
+            // Build table of ordered items with S.No
+            $tableRows = "";
+            $sno = 1;
+            foreach ($createdOrders as $order) {
+                // Fetch product info
+                $sqlProduct = "SELECT name, image FROM products WHERE id = :id LIMIT 1";
+                $stmtProduct = $this->pdo->prepare($sqlProduct);
+                $stmtProduct->execute([':id' => $order['product_id']]);
+                $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
+
+                $productName = $product['name'] ?? "Unknown Product";
+                $productImage = $product['image'] ?? "";
+
+                $tableRows .= "
+        <tr>
+            <td style='text-align: center;'>{$sno}</td>
+            <td>
+                " . ($productImage ? "<img src='{$productImage}' alt='{$productName}' width='50' style='vertical-align: middle; margin-right: 8px;' />" : "") . "
+                {$productName}
+            </td>
+            <td style='text-align: center;'>{$order['quantity']}</td>
+            <td style='text-align: right;'>{$order['price']}</td>
+            <td style='text-align: right;'>{$order['total']}</td>
+        </tr>
+    ";
+                $sno++;
+            }
+
+            $messageBody = "
+            <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
+                <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
+                <p>Thank you for shopping with us! Your order has been successfully placed. Here are the details:</p>
+
+                <table border='0' cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;'>
+                    <thead>
+                        <tr style='background-color: #2E86C1; color: #fff;'>
+                            <th style='text-align: center;'>S.No</th>
+                            <th style='text-align: left;'>Product</th>
+                            <th style='text-align: center;'>Quantity</th>
+                            <th style='text-align: right;'>Price</th>
+                            <th style='text-align: right;'>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        $tableRows
+                    </tbody>
+                </table>
+
+                <p style='margin-top: 20px;'>We will notify you once your order is shipped. If you have any questions, feel free to reply to this email.</p>
+
+                <p style='margin-top: 30px; font-weight: bold; color: #2E86C1;'>Thank you for choosing us!</p>
+                <p style='font-size: 12px; color: #777;'>This is an automated email, please do not reply directly.</p>
+            </div>
+            ";
+            // ✅ Send mail 
+            sendMail($to, $subject, $messageBody);
+
+            // ✅ Final response
+            return [
+                'success' => true,
+                'orders'  => $createdOrders
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error'   => $e->getMessage()
+            ];
         }
-
-
-        // after inserting all, clear cart
-        $this->deleteCartItemsByUser($userId);
-
-        return [
-            'success' => true,
-            'orders'  => $createdOrders
-        ];
     }
+
+
 
 
 
