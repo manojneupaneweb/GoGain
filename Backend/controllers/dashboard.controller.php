@@ -53,12 +53,12 @@ class DashboardController
 
             // 6. Recent orders (last 5)
             $stmt = $pdo->prepare("
-            SELECT o.id, o.order_status, o.createdAt, u.email as customer_email,
+            SELECT o.id, o.order_status, o.created_at, u.email as customer_email,
                    (p.price * o.quantity) as total_price
             FROM orders o
             JOIN users u ON o.user_id = u.id
             JOIN products p ON o.product_id = p.id
-            ORDER BY o.createdAt DESC
+            ORDER BY o.created_at DESC
             LIMIT 5
         ");
             $stmt->execute();
@@ -271,7 +271,7 @@ class DashboardController
 
         try {
             // Get all users with their information
-            $stmt = $pdo->prepare("SELECT fullName, email, phone, address, date_of_birth, avatar, created_at, last_login FROM users WHERE role = 'user' OR role = 'trainer'");
+            $stmt = $pdo->prepare("SELECT fullName, email, phone,  avatar, created_at, last_login FROM users WHERE role = 'user'");
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -289,6 +289,7 @@ class DashboardController
             ]);
         }
     }
+   
 
     public function changeOrderStatus()
     {

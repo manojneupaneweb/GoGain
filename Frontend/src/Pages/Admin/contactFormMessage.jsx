@@ -33,7 +33,7 @@ const ContactFormMessage = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const filteredMessages = messages.filter(msg => 
+    const filteredMessages = messages.filter(msg =>
         msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         msg.subject.toLowerCase().includes(searchTerm.toLowerCase())
@@ -46,11 +46,11 @@ const ContactFormMessage = () => {
                 headers: { Authorization: `Bearer ${token}` },
                 withCredentials: true
             });
-            setMessages(messages.map(msg => 
-                msg.id === id ? {...msg, seen_status: 'seen'} : msg
+            setMessages(messages.map(msg =>
+                msg.id === id ? { ...msg, seen_status: 'seen' } : msg
             ));
             if (selectedMessage?.id === id) {
-                setSelectedMessage({...selectedMessage, seen_status: 'seen'});
+                setSelectedMessage({ ...selectedMessage, seen_status: 'seen' });
             }
         } catch (err) {
             console.error('Failed to mark message as seen:', err);
@@ -76,7 +76,7 @@ const ContactFormMessage = () => {
                         <div className="flex items-center justify-between mb-3">
                             <h1 className="text-xl font-bold text-white">Messages</h1>
                             {isMobileView && selectedMessage && (
-                                <button 
+                                <button
                                     onClick={() => setShowMessageList(false)}
                                     className="p-1 rounded-full hover:bg-gray-700 text-gray-300"
                                 >
@@ -97,7 +97,7 @@ const ContactFormMessage = () => {
                             />
                         </div>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto">
                         {filteredMessages.length === 0 ? (
                             <div className="p-4 text-center text-gray-400 flex flex-col items-center justify-center h-full">
@@ -108,9 +108,8 @@ const ContactFormMessage = () => {
                             filteredMessages.map((msg) => (
                                 <div
                                     key={msg.id}
-                                    className={`p-4 border-b border-gray-700 cursor-pointer transition-colors duration-150 flex items-start hover:bg-gray-700 ${
-                                        selectedMessage?.id === msg.id ? 'bg-gray-700' : ''
-                                    } ${msg.seen_status === 'unseen' ? 'bg-gray-700/50' : ''}`}
+                                    className={`p-4 border-b border-gray-700 cursor-pointer transition-colors duration-150 flex items-start hover:bg-gray-700 ${selectedMessage?.id === msg.id ? 'bg-gray-700' : ''
+                                        } ${msg.seen_status === 'unseen' ? 'bg-gray-700/50' : ''}`}
                                     onClick={() => handleSelectMessage(msg)}
                                 >
                                     <div className="flex-shrink-0 mr-3">
@@ -124,7 +123,7 @@ const ContactFormMessage = () => {
                                                 {msg.name}
                                             </h3>
                                             <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-                                                {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                         <p className="text-sm font-medium text-blue-100 truncate mt-0.5">
@@ -158,7 +157,7 @@ const ContactFormMessage = () => {
                         <>
                             <div className="p-4 border-b border-gray-700 bg-gray-800 sticky top-0 z-10 flex items-center">
                                 {isMobileView && (
-                                    <button 
+                                    <button
                                         onClick={() => setShowMessageList(true)}
                                         className="mr-2 p-1 rounded-full hover:bg-gray-700 text-gray-300"
                                     >
@@ -174,45 +173,36 @@ const ContactFormMessage = () => {
                                     <h2 className="font-semibold text-white">{selectedMessage.name}</h2>
                                     <p className="text-sm text-gray-400 truncate">{selectedMessage.email}</p>
                                 </div>
-                                <div className="ml-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        selectedMessage.seen_status === 'seen'
+                                {/* <div className="ml-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedMessage.seen_status === 'seen'
                                             ? 'bg-green-900 text-green-300'
                                             : 'bg-yellow-900 text-yellow-300'
-                                    }`}>
+                                        }`}>
                                         {selectedMessage.seen_status}
                                     </span>
-                                </div>
+                                </div> */}
                             </div>
 
-                            <div className="p-6 flex-1 overflow-y-auto">
+                            <div className="p-6 flex-1 overflow-y-auto bg-gray-800 rounded-xl shadow-lg">
                                 <div className="mb-6">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <h3 className="text-lg font-semibold text-white">{selectedMessage.subject}</h3>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+                                        <div  className='flex gap-5'>
+                                        <h3 className="text-lg font-semibold text-orange-400">Subject :</h3>
+                                        <p className="text-lg font-medium text-white">{selectedMessage.subject}</p>
+                                        </div>
                                         <span className="text-xs text-gray-400">
                                             {new Date(selectedMessage.created_at).toLocaleDateString()}
                                         </span>
                                     </div>
-                                    <div className="bg-gray-700 rounded-lg p-4">
-                                        <p className="text-gray-100 whitespace-pre-line">{selectedMessage.message}</p>
-                                    </div>
-                                </div>
-
-                                {/* Reply section */}
-                                <div className="mt-8 border-t border-gray-700 pt-6">
-                                    <h4 className="text-sm font-medium text-gray-300 mb-3">Reply to {selectedMessage.name}</h4>
-                                    <textarea 
-                                        className="w-full p-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-700 text-white placeholder-gray-400"
-                                        rows="4"
-                                        placeholder="Type your response here..."
-                                    ></textarea>
-                                    <div className="mt-3 flex justify-end">
-                                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors">
-                                            Send Reply
-                                        </button>
+                                    <div className="bg-gray-700 rounded-xl p-6 flex  gap-5 shadow-inner border border-gray-600">
+                                        <h3 className="text-gray-300 font-semibold mb-2">Message:</h3>
+                                        <p className="text-gray-100 whitespace-pre-line leading-relaxed">
+                                            {selectedMessage.message}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
+
                         </>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">

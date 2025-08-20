@@ -743,6 +743,7 @@ class UserController
 
     public function verifyUser()
     {
+        global $pdo;
         header('Content-Type: application/json');
 
         if (!isset($_SESSION['user_id'])) {
@@ -754,10 +755,23 @@ class UserController
         try {
             $userId = $_SESSION['user_id'];
             if ($userId) {
-                echo json_encode(['success' => true, 'message' => 'This user is logged in and verified.']);
+                $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $role = $user ? $user['role'] : null;
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'This user is logged in and verified.',
+                    'role' => $role,
+                ]);
             } else {
                 http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'User not found']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]);
             }
         } catch (Exception $e) {
             http_response_code(500);

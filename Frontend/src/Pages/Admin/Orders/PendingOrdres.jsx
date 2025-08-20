@@ -65,7 +65,7 @@ const PendingOrders = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/v1/cart/getorderitem`, {
+      const response = await axios.get(`/api/v1/cart/aa`, {
         params: { page, limit },
         headers: {
           'Content-Type': 'application/json',
@@ -88,6 +88,7 @@ const PendingOrders = () => {
         toast.info("No orders data available");
       }
     } catch (error) {
+      console.log('log error',error.response?.data);
       console.error("Error fetching orders:", error);
       setError(error.response?.data?.message || error.message);
       toast.error("Failed to load orders");

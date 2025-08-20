@@ -437,30 +437,18 @@ class OrderController
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
-    public function GetOrderItem()
+    public function GetOrderItems()
     {
         try {
-            global $pdo;
-            $stmt = $pdo->prepare("SELECT * FROM orders");
-            $stmt->execute();
-
-            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (empty($orders)) {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'No orders found']);
-                return;
-            }
-
-            http_response_code(200);
-            echo json_encode(['success' => true, 'data' => $orders]);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode([
+            return [
+                'success' => true,
+                'orders'  => 'fatch in try'
+            ];
+        } catch (Exception $e) {
+            return [
                 'success' => false,
-                'message' => 'Database error',
-                'error' => $e->getMessage()
-            ]);
+                'error'   => $e->getMessage()
+            ];
         }
     }
 }

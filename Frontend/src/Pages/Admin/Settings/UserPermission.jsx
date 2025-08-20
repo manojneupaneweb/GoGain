@@ -39,6 +39,7 @@ function UserPermission() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [newRole, setNewRole] = useState(''); // Store the role to assign
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -46,8 +47,8 @@ function UserPermission() {
         const response = await axios.get('/api/v1/admin/getallusers', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
         });
 
         if (response.data?.success) {
@@ -86,13 +87,13 @@ function UserPermission() {
     }
   }, [searchTerm, users]);
 
-  const handleRoleChangeClick = (userId) => {
-    const user = users.find(user => user.id === userId);
+  const handleRoleChangeClick = (user, role) => {
     setSelectedUser(user);
+    setNewRole(role);
     setShowConfirmDialog(true);
   };
 
-  const toggleUserRole = async () => {
+  const changeUserRole = async () => {
     if (!selectedUser) return;
 
     setShowConfirmDialog(false);
@@ -100,32 +101,22 @@ function UserPermission() {
     try {
       const response = await axios.post(
         `/api/v1/admin/changerole`,
-        {
-          role: selectedUser.role === 'admin' ? 'user' : 'admin',
-          userId: selectedUser.id
-        },
+        { role: newRole, userId: selectedUser.id },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
         }
       );
 
       if (response.data?.success) {
-        setUsers(prevUsers => {
-          const updatedUsers = prevUsers.map(user =>
-            user.id === selectedUser.id
-              ? { ...user, role: user.role === 'admin' ? 'user' : 'admin' }
-              : user
-          );
-          return [...updatedUsers].sort((a, b) => {
-            if (a.role === 'admin' && b.role !== 'admin') return -1;
-            if (a.role !== 'admin' && b.role === 'admin') return 1;
-            return 0;
-          });
-        });
-        toast.success(`User role updated to ${selectedUser.role === 'admin' ? 'User' : 'Admin'} successfully!`);
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
+            user.id === selectedUser.id ? { ...user, role: newRole } : user
+          )
+        );
+        toast.success(`User role updated to ${newRole} successfully!`);
       } else {
         toast.error(response.data?.message || 'Failed to update user role');
       }
@@ -161,16 +152,23 @@ function UserPermission() {
     );
   }
 
+  const roles = ['user', 'trainer', 'admin'];
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">User Permissions</h1>
       <ToastContainer />
+
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <input
@@ -199,7 +197,7 @@ function UserPermission() {
               {filteredUsers.map((user, index) => (
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <p className='text-black'>{index + 1}</p>
+                    <p className="text-black">{index + 1}</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-4">
@@ -213,13 +211,19 @@ function UserPermission() {
                       </span>
                     </div>
                   </td>
-
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{user.email || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.role === 'admin'
+                          ? 'bg-green-100 text-green-800'
+                          : user.role === 'trainer'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
                       {user.role || 'N/A'}
                     </span>
                   </td>
@@ -227,15 +231,23 @@ function UserPermission() {
                     {user.id === currentUserId ? (
                       <span className="text-gray-500">Current User</span>
                     ) : (
-                      <button
-                        onClick={() => handleRoleChangeClick(user.id)}
-                        className={`mr-2 cursor-pointer ${user.role === 'admin'
-                          ? 'bg-blue-600 hover:bg-blue-700'
-                          : 'bg-green-600 hover:bg-green-700'
-                          } text-white py-1 px-3 rounded-md text-sm`}
-                      >
-                        Make {user.role === 'admin' ? 'User' : 'Admin'}
-                      </button>
+                      roles
+                        .filter(role => role !== user.role)
+                        .map(role => (
+                          <button
+                            key={role}
+                            onClick={() => handleRoleChangeClick(user, role)}
+                            className={`mr-2 cursor-pointer ${
+                              role === 'admin'
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : role === 'trainer'
+                                ? 'bg-purple-600 hover:bg-purple-700'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            } text-white py-1 px-3 rounded-md text-sm`}
+                          >
+                            Make {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </button>
+                        ))
                     )}
                   </td>
                 </tr>
@@ -253,8 +265,8 @@ function UserPermission() {
       <ConfirmationDialog
         isOpen={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}
-        onConfirm={toggleUserRole}
-        message={`Are you sure you want to change ${selectedUser?.fullName}'s role to ${selectedUser?.role === 'admin' ? 'User' : 'Admin'}?`}
+        onConfirm={changeUserRole}
+        message={`Are you sure you want to change ${selectedUser?.fullName}'s role to ${newRole}?`}
       />
     </div>
   );

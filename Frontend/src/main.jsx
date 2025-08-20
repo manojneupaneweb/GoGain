@@ -85,9 +85,9 @@ const router = createBrowserRouter([
                 ),
             },
             {
-                path: "/myproduct",
+                path: "/myorder",
                 element: (
-                    <ProtectedRoute allowedRoles={["user"]}>
+                    <ProtectedRoute allowedRoles={['user', 'trainer']}>
                         <MyProduct />
                     </ProtectedRoute>
                 ),

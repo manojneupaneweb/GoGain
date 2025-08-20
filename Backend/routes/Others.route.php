@@ -46,9 +46,9 @@ try {
         header('Content-Type: application/json');
         echo json_encode($orderController->createOrder());
         exit;
-    } elseif ($method === 'GET' && preg_match('/\/getorderitem\/?$/', $uri)) {
+    } elseif ($method === 'GET' && preg_match('/\/aa\/?$/', $uri)) {
         checkAuth();
-        $orderController->GetOrderItem();
+        $orderController->GetOrderItems();
     }
 
 

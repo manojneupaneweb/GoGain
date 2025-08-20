@@ -162,8 +162,6 @@ function Cart() {
             toast.error("Failed to place order. Please try again.");
         }
     };
-
-
     if (loading) {
         return <Loading />;
     }
@@ -377,14 +375,12 @@ function Cart() {
                         <p className="mt-2 text-gray-500">
                             Start adding some products to your cart!
                         </p>
-                        <div className="mt-6">
-                            <Link
-                                to="/product"
-                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                            >
-                                Continue Shopping
-                            </Link>
-                        </div>
+                        <a href="/product"
+                        className="inline-flex items-center my-5 cursor-pointer px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        >
+                        Continue Shopping
+                        </a>
+
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

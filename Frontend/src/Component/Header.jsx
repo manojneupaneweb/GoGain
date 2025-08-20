@@ -489,13 +489,14 @@ const UserDropdown = ({ userData }) => {
               <>
                 <DropdownItem href="/profile">My profile</DropdownItem>
                 <DropdownItem href="/dashboard">View dashboard</DropdownItem>
-                <DropdownItem href="/myproduct">Product status</DropdownItem>
+                <DropdownItem href="/myorder">My Order</DropdownItem>
                 <DropdownItem href="/setting">Settings</DropdownItem>
               </>
             )}
             {userData?.role === 'trainer' && (
               <>
                 <DropdownItem href="/trainer-dashboard">Trainer dashboard</DropdownItem>
+              <DropdownItem href="/myorder">My Order</DropdownItem>
                 <DropdownItem href="/setting">Setting</DropdownItem>
               </>
             )}
@@ -557,7 +558,7 @@ const UserDropdownMobile = ({ userData }) => {
               <>
                 <MobileDropdownItem href="/profile">My profile</MobileDropdownItem>
                 <MobileDropdownItem href="/dashboard">Dashboard</MobileDropdownItem>
-                <MobileDropdownItem href="/myproduct">Products</MobileDropdownItem>
+                <MobileDropdownItem href="/myorder">Products</MobileDropdownItem>
                 <MobileDropdownItem href="/setting">Settings</MobileDropdownItem>
               </>
             )}

@@ -10,7 +10,6 @@ function Pricing() {
     const [showPaymentPopup, setShowPaymentPopup] = useState(false);
     const [activeTab, setActiveTab] = useState('esewa');
     const [total, setTotal] = useState(0);
-
     const verifyUser = async () => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -21,7 +20,7 @@ function Pricing() {
             const response = await axios.get('/api/v1/user/verify-user', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            return response.data.success;
+            return { success: response.data.success, role: response.data.role };
         } catch (error) {
             console.error('Error verifying user:', error);
             localStorage.removeItem('accessToken');
@@ -30,10 +29,19 @@ function Pricing() {
     };
 
     const handleJoinNow = async (plan) => {
-        const isLoggedIn = await verifyUser();
+        const { success, role } = await verifyUser();
+
+        if (role === 'trainer' || role === 'admin') {
+            toast.info(`As a ${role}, you don't need to buy a plan in GoGain 💪`, {
+                autoClose: 2000,
+            });
+
+            return;
+        }
 
 
-        if (!isLoggedIn) {
+
+        if (!success) {
             setSelectedPlan(plan);
             localStorage.removeItem('accessToken');
             toast.error('Please login to continue', {

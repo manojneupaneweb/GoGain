@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiHome, FiCalendar, FiClock, FiLogIn } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiHome, FiCalendar, FiClock, FiLogIn, FiX, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
