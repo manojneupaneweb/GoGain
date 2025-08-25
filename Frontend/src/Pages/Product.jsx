@@ -3,6 +3,7 @@ import axios from 'axios';
 import Loading from '../Component/Loading';
 import { useCart } from '../utils/CartContext.jsx';
 import addToCart from '../utils/CartUtils.jsx';
+import { toast } from 'react-toastify';
 
 function ProductListing() {
   // State management
@@ -16,9 +17,43 @@ function ProductListing() {
   const [categories, setCategories] = useState(['all']);
 
   const { cartItems, setCartItems, setCartCount } = useCart();
-const handleAddtoCart = (product) => {
-  addToCart(product, cartItems, setCartItems, setCartCount);
-};
+  const handleAddtoCart = async (product) => {
+    const verifyUser = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        return false
+      };
+
+      try {
+        const response = await axios.get('/api/v1/user/verify-user', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: response.data.success, role: response.data.role };
+      } catch (error) {
+        console.error('Error verifying user:', error);
+        localStorage.removeItem('accessToken');
+        return false;
+      }
+    };
+
+    const { role } = await verifyUser();
+
+    if (role === 'trainer' || role === 'admin') {
+      toast.info(`⚠️ Access Denied: ${role}s cannot add items to the cart.`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+
+      return;
+    }
+
+    addToCart(product, cartItems, setCartItems, setCartCount);
+  };
 
 
   // Fetch products from API
@@ -111,7 +146,7 @@ const handleAddtoCart = (product) => {
 
   // Loading state
   if (loading) {
-    <Loading/>
+    <Loading />
   }
 
   // Error state
@@ -218,7 +253,7 @@ const handleAddtoCart = (product) => {
                   <div className="p-4">
                     <p className="text-lg font-semibold text-gray-900 mb-1">
                       <a href={`/product/${product.id}`}>
-                      {product.name.length > 30 ? `${product.name.slice(0, 27)}...` : product.name}
+                        {product.name.length > 30 ? `${product.name.slice(0, 27)}...` : product.name}
                       </a>
                     </p>
                     <div className="flex items-center mb-2">
@@ -238,7 +273,7 @@ const handleAddtoCart = (product) => {
                     <p className="text-sm text-gray-500 capitalize mt-1">{product.category}</p>
                     <button
                       className="mt-4 w-full bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition duration-300"
-                      onClick={() => handleAddtoCart (product, 1, setCartCount)}
+                      onClick={() => handleAddtoCart(product, 1, setCartCount)}
                     >
                       Add to Cart
                     </button>

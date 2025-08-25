@@ -1,44 +1,109 @@
 <?php
+class PaymentController {
 
-class PayController {
-   public function initiateKhaltiPayment($data) {
-      $payload = [
-         "return_url" => $data['return_url'] ?? '',
-         "website_url" => $data['website_url'] ?? '',
-         "amount" => $data['amount'] ?? 0,
-         "purchase_order_id" => $data['purchase_order_id'] ?? '',
-         "purchase_order_name" => $data['purchase_order_name'] ?? '',
-         "customer_info" => $data['customer_info'] ?? []
-      ];
+    // Initiate Khalti Payment
+    public function initiateKhaltiPayment() {
+        header('Content-Type: application/json'); // ensure JSON output
 
-      $ch = curl_init('https://dev.khalti.com/api/v2/epayment/initiate/');
-      curl_setopt($ch, CURLOPT_HTTPHEADER, [
-         'Authorization: Key a552042a0421456090d846ce4bc23e7e',
-         'Content-Type: application/json'
-      ]);
-      curl_setopt($ch, CURLOPT_POST, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
 
-      $response = curl_exec($ch);
-      $error = curl_error($ch);
-      $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
+            // Validate input
+            if (!$data || !isset($data['amount']) || !isset($data['productId']) || !isset($data['redirectLink'])) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Invalid input: amount, productId, redirectLink required"
+                ]);
+                return;
+            }
 
-      header('Content-Type: application/json');
-      http_response_code($status);
+            $amount = intval($data['amount']); // amount in paisa
+            $productId = $data['productId'];
+            $redirectLink = $data['redirectLink'];
 
-      if ($error) {
-         echo json_encode(['error' => $error]);
-         exit;
-      }
+            // Validate minimum amount (>= 1000 paisa = Rs 10)
+            if ($amount < 1000) {
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Amount should be at least 1000 paisa"
+                ]);
+                return;
+            }
 
-      if (!$response) {
-         echo json_encode(['error' => 'Empty response from Khalti']);
-         exit;
-      }
+            // Khalti API payload
+            $payload = [
+                "return_url" => "http://localhost:5173/$redirectLink",
+                "website_url" => "http://localhost:5173/",
+                "amount" => $amount,
+                "purchase_order_id" => $productId,
+                "purchase_order_name" => "Test Product",
+                "customer_info" => [
+                    "name" => "Test User",
+                    "email" => "test@khalti.com",
+                    "phone" => "9800000001"
+                ]
+            ];
 
-      echo $response;
-      exit;
-   }
+            // cURL request to Khalti
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "https://dev.khalti.com/api/v2/epayment/initiate/",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: key live_secret_key_68791341fdd94846a146f0457ff7b455",
+                    "Content-Type: application/json"
+                ],
+            ]);
+
+            $response = curl_exec($curl);
+            $err = curl_error($curl);
+            curl_close($curl);
+
+            if ($err) {
+                echo json_encode(["status" => "error", "message" => $err]);
+            } else {
+                // Return Khalti response (includes payment_url)
+                echo $response;
+            }
+
+        } catch (\Throwable $th) {
+            echo json_encode(["status" => "error", "message" => $th->getMessage()]);
+        }
+    }
+
+    // Optional: Lookup API to verify payment after callback
+    public function verifyPayment($pidx) {
+        header('Content-Type: application/json');
+
+        if (!$pidx) {
+            echo json_encode(["status" => "error", "message" => "pidx is required"]);
+            return;
+        }
+
+        $payload = ["pidx" => $pidx];
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => "https://dev.khalti.com/api/v2/epayment/lookup/",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => [
+                "Authorization: key live_secret_key_68791341fdd94846a146f0457ff7b455",
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+
+        if ($err) {
+            echo json_encode(["status" => "error", "message" => $err]);
+        } else {
+            echo $response;
+        }
+    }
 }

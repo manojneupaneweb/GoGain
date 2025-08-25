@@ -106,7 +106,6 @@ function AddProduct() {
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to add product';
       toast.error(errorMessage);
-      console.log('Error:', error);
     } finally {
       setLoading(false);
     }

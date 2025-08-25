@@ -93,7 +93,7 @@ function AdminDashboard() {
 
   // Prepare chart data from API response
   const orderStatusData = {
-    labels: ['Pending', 'Shipping', 'Completed', 'Cancelled'],
+    labels: ['pending', 'shipping', 'completed', 'cancelled'],
     datasets: [
       {
         data: [

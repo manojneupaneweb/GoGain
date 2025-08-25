@@ -30,7 +30,9 @@ try {
         $userController->getcontactform();
     } elseif ($method === 'POST' && preg_match('/\/forgetpassword\/?$/', $uri)) {
         $userController->forgetPassword();
-    }
+    }elseif ($method === 'POST' && preg_match('/\/refreshtoken\/?$/', $uri)) {
+        $userController->refreshToken();
+    } 
 
 
 

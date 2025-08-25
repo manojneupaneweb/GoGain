@@ -26,8 +26,8 @@ try {
         checkAdminAuth();
         $productId = $matches[1];
         $productController->deleteProduct($productId);
-    } elseif ($method === 'PUT' && preg_match('/\/updateproduct\/(.+)/', $uri, $matches)) {
-        checkAdminAuth(); // Optional: Only allow admins
+    } elseif ($method === 'POST' && preg_match('/\/updateproduct\/(.+)/', $uri, $matches)) {
+        checkAdminAuth();
         $productId = $matches[1];
         $productController->updateProduct($productId);
     }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
-import { initiateEsewaPayment } from '../utils/payment';
+import { initiateEsewaPayment, initiateKhaltiPayment } from '../utils/payment';
 import { motion as Motion } from 'framer-motion';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -69,8 +69,16 @@ function Pricing() {
     };
 
     // Handle payment via Khalti (placeholder)
-    const handleKhaltiClick = (amount) => {
-        console.log(`Initiating Khalti payment for amount: ${amount}`);
+    const handleKhaltiClick = (amount, plan) => {
+
+        localStorage.setItem(
+            'selectedPlan',
+            JSON.stringify({ name: plan.name, price: amount, duration: plan.duration })
+        );
+
+        const redirectLink = '/createplan';
+        initiateKhaltiPayment(amount, 2736, redirectLink);
+        setShowPaymentPopup(false);
         setShowPaymentPopup(false);
     };
 
@@ -250,7 +258,7 @@ function Pricing() {
                                             <strong>रु. {total}</strong>
                                         </p>
                                         <button
-                                            onClick={() => handleKhaltiClick(total)}
+                                            onClick={() => handleKhaltiClick(total, selectedPlan)}
                                             className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors duration-200"
                                         >
                                             <FaShieldAlt className="text-sm" />

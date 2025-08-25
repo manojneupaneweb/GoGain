@@ -53,38 +53,25 @@ export const initiateEsewaPayment = (amount, productId, redirectlink) => {
 
 
 
-
-
-
-export const initiateKhaltiPayment = async (amount, productId) => {
+export const initiateKhaltiPayment = async (amount, productId, redirectLink) => {
   try {
-    const response = await axios.post('/api/v1/payment/khalti/initiate', {
-      amount: 1000,  // example amount in paisa
-      purchase_order_id: 'order-123',
-      purchase_order_name: 'Test Product',
-      return_url: `${window.location.origin}/khalti/return`,
-      website_url: window.location.origin,
-      customer_info: {
-        name: 'Ram Bahadur',
-        email: 'test@khalti.com',
-        phone: '9800000001'
-      }
-    });
-    console.log('Khalti response:', response.data);
+    const payload = {
+      amount: amount * 100, 
+      productId,
+      redirectLink: redirectLink || "paymentsuccess",
+    };
 
-    if (response.data.payment_url) {
+    const response = await axios.post("http://localhost:8000/api/v1/payment/khalti/initiate", payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log('payment response:', response);
+
+    if (response.data && response.data.payment_url) {
       window.location.href = response.data.payment_url;
-    } else if (response.data.error) {
-      console.error('Khalti API error:', response.data.error);
+    } else {
+      console.error("Payment initiation failed", response);
     }
-  } catch (err) {
-    console.error('Request failed', err);
+  } catch (error) {
+    console.error("Request failed", error);
   }
 };
-
-
-
-
-
-
-

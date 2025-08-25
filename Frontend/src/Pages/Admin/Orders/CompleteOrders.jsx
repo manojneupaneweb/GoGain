@@ -24,8 +24,8 @@ function CompleteOrders() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/v1/cart/getorderitem`, {
-        params: { page, limit },
+      const response = await axios.get(`/api/v1/admin/getallorders`, {
+        params: { page, limit , status: 'completed'},
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`
@@ -77,7 +77,7 @@ function CompleteOrders() {
     );
   }
 
-  const completedOrders = orders.filter(order => order.order_status === "complete");
+  const completedOrders = orders.filter(order => order.order_status === "completed");
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -98,7 +98,16 @@ function CompleteOrders() {
                         Order ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Quantity
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Price
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date
@@ -116,15 +125,50 @@ function CompleteOrders() {
                             #{order.id?.substring(0, 8)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap flex">
+                          <img
+                            src={order.product_image}
+                           className="w-10 h-10 rounded-md object-cover mr-2 border border-gray-300"
+                            alt={order.product_name}
+                          />
                           <div className="text-sm text-gray-900">
-                            {order.user_id?.substring(0, 8) || "Guest"}
+                            {order.product_name?.substring(0, 8) || "N/A"}
+                            <br />
+                            Price: {order.product_price}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {new Date(order.createdAt).toLocaleDateString()}
+                            {order.quantity}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap flex">
+                          <img
+                            src={order.avatar}
+                            className="w-10 h-10 rounded-md object-cover mr-2"
+                            alt={order.fullName}
+                          />
+                          <div className="text-sm text-gray-900">
+                            {order.fullName?.substring(0, 8) || "N/A"}
+                            <br />
+                            Email: {order.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {order.total_price}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(order.created_at).toLocaleTimeString()}
+                          </div>
+                          {/* <div className="text-sm text-gray-900">
+                            {timeAgo(order.created_at)}
+                          </div> */}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center ${statusConfig.completed.color}`}>

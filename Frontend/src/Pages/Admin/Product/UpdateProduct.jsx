@@ -25,8 +25,6 @@ function UpdateProduct() {
       setLoading(true);
       const response = await axios.get(`/api/v1/product/${id}`);
       const product = response.data.data;
-      console.log('Fetched product:', product.image);
-
 
       // Parse specifications if they're stored as string
       const specs = typeof product.specifications === 'string'
@@ -138,13 +136,14 @@ function UpdateProduct() {
     formData.append('specifications', JSON.stringify(productData.specifications));
 
     try {
-      const responce = await axios.put(`/api/v1/product/updateproduct/${id}`, formData, {
+       await axios.post(`/api/v1/product/updateproduct/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
         },
         withCredentials: true
       });
+      
 
       toast.success('Product updated successfully!');
       // Refresh the product data after successful update

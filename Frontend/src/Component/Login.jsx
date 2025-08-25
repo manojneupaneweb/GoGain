@@ -39,7 +39,12 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       const { email, password } = formData;
       const res = await axios.post('/api/v1/user/login', { email, password });
-      localStorage.setItem('accessToken', res.data.token);
+
+      if (res.data.success) {
+        localStorage.setItem('accessToken', res.data.token);
+        localStorage.setItem('refreshToken', res.data.refresh_token);
+      }     
+      
       toast.success('Login successful!');
       onSuccess();
     } catch (err) {
@@ -123,7 +128,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
           <div className="space-y-6">
             <h3 className="text-xl font-bold text-orange-500">Reset Password</h3>
             <p className="text-gray-300">Enter your email to receive an OTP</p>
-            
+
             <div className="mb-4">
               <label className="flex text-gray-300 mb-2 items-center">
                 <FaEnvelope className="mr-2 text-orange-400" /> Email
@@ -161,7 +166,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
           <div className="space-y-6">
             <h3 className="text-xl font-bold text-orange-500">Verify OTP</h3>
             <p className="text-gray-300">Enter the 6-digit OTP sent to {formData.email}</p>
-            
+
             <div className="mb-4">
               <label className="flex text-gray-300 mb-2 items-center">
                 <FaCheck className="mr-2 text-orange-400" /> OTP
@@ -207,7 +212,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
           <div className="space-y-6">
             <h3 className="text-xl font-bold text-orange-500">Set New Password</h3>
             <p className="text-gray-300">Create a new password for your account</p>
-            
+
             <div className="mb-4">
               <label className="flex text-gray-300 mb-2 items-center">
                 <FaLock className="mr-2 text-orange-400" /> New Password
@@ -366,7 +371,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
         <div className="relative">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-orange-500 flex items-center">
-              <FaDumbbell className="mr-2 animate-bounce" /> 
+              <FaDumbbell className="mr-2 animate-bounce" />
               {forgotPasswordStep === 'login' ? 'Welcome Back!' : 'Reset Password'}
             </h2>
             <button

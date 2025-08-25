@@ -48,7 +48,7 @@ import ContactFormMessage from "./Pages/Admin/contactFormMessage.jsx";
 import Constumers from "./Pages/Admin/Constumers.jsx";
 import Analytics from "./Pages/Admin/Analytics.jsx";
 import Reports from "./Pages/Admin/Reports.jsx";
-
+import DeleverdOrders from "./Pages/Admin/Orders/DeleverdOrders.jsx";
 // Axios default
 axios.defaults.baseURL = "http://localhost:3000";
 
@@ -154,6 +154,7 @@ const router = createBrowserRouter([
             // Orders
             { path: "orders/pending", element: <PendingOrdres /> },
             { path: "orders/shipping", element: <ShippingOrders /> },
+            { path: "orders/deleverd", element: <DeleverdOrders /> },
             { path: "orders/complete", element: <CompleteOrders /> },
             { path: "orders/cancel", element: <CancelOrders /> },
             { path: "customers", element: <Constumers /> },

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
 
 require 'vendor/autoload.php';
+
 use Ramsey\Uuid\Uuid;
 
 use Firebase\JWT\JWT;
@@ -132,6 +133,7 @@ class ProductController
             echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
         }
     }
+
     public function getAllProduct()
     {
         header('Content-Type: application/json');
@@ -151,6 +153,7 @@ class ProductController
             echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
         }
     }
+
     public function getProductByID($id)
     {
         header('Content-Type: application/json');
@@ -214,47 +217,66 @@ class ProductController
     }
 
     public function updateProduct($productId)
-{
-    global $pdo;
+    {
+        global $pdo;
 
-    parse_str(file_get_contents("php://input"), $_PUT);
+        // Only accept POST request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Only POST requests allowed']);
+            exit;
+        }
 
-    $name = $_POST['name'] ?? null;
-    $description = $_POST['description'] ?? null;
-    $price = $_POST['price'] ?? null;
-    $stock = $_POST['stock'] ?? null;
-    $category = $_POST['category'] ?? null;
+        // Get POST fields safely
+        $name = $_POST['name'] ?? null;
+        $description = $_POST['description'] ?? null;
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : null;
+        $stock = isset($_POST['stock']) ? intval($_POST['stock']) : null;
+        $category = $_POST['category'] ?? null;
+        $discount = isset($_POST['discount']) ? floatval($_POST['discount']) : null;
+        $warranty = $_POST['warranty'] ?? null;
+        $specifications = isset($_POST['specifications']) ? $_POST['specifications'] : '[]';
 
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-        $imageName = uniqid() . "_" . $_FILES['image']['name'];
-        move_uploaded_file($_FILES['image']['tmp_name'], "../uploads/" . $imageName);
-        $imagePath = "/uploads/" . $imageName;
-    } else {
-        // Optional: handle missing image or retain existing
+        // Get existing image
         $stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
         $stmt->execute([$productId]);
-        $imagePath = $stmt->fetchColumn();
-    }
+        $existingImage = $stmt->fetchColumn();
+        $imagePath = $existingImage;
 
-    $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, image = ? WHERE id = ?");
-    $success = $stmt->execute([$name, $description, $price, $stock, $category, $imagePath, $productId]);
+        // Handle new image upload
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+            $imageName = uniqid() . "_" . basename($_FILES['image']['name']);
+            $targetPath = "../uploads/" . $imageName;
 
-    if ($success) {
-        echo json_encode(['success' => true, 'message' => 'Product updated successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update product']);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+                $imagePath = "/uploads/" . $imageName;
+            }
+        }
+
+        // Update query
+        $stmt = $pdo->prepare("
+        UPDATE products
+        SET name = ?, description = ?, price = ?, stock = ?, category = ?, discount = ?, warranty = ?, specifications = ?, image = ?, updated_at = NOW()
+        WHERE id = ?
+    ");
+
+        $success = $stmt->execute([
+            $name,
+            $description,
+            $price,
+            $stock,
+            $category,
+            $discount,
+            $warranty,
+            $specifications,
+            $imagePath,
+            $productId
+        ]);
+
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Product updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update product']);
+        }
     }
 }
-
-
-
-
-
-
-
-
-}
-
-
-
-

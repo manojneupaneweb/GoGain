@@ -230,10 +230,10 @@ class UserController
             $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
 
             $stmt = $this->pdo->prepare("
-    INSERT INTO users 
-    (id, fullName, email, phone, password, delivery_address, gender, role, avatar, created_at, updated_at, last_login) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'user', ?, NOW(), NOW(), NULL)
-");
+            INSERT INTO users 
+            (id, fullName, email, phone, password, delivery_address, gender, role, avatar, created_at, updated_at, last_login) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'user', ?, NOW(), NOW(), NULL)
+        ");
 
 
             $result = $stmt->execute([
@@ -253,29 +253,29 @@ class UserController
                 // Optionally, send a welcome email
                 $subject = "Welcome to GoGain!";
                 $body = "
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px; }
-        .container { background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #e74c3c; }
-        .message { font-size: 16px; color: #2c3e50; line-height: 1.6; }
-        .highlight { font-weight: bold; color: #e74c3c; }
-        .footer { font-size: 12px; color: #6c757d; margin-top: 20px; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <h2>Welcome to GoGain, {$fullName}! </h2>
-        <p class='message'>Your account is now active. Log in with your email and password to start your fitness journey, track your progress, and push beyond your limits.</p>
-        <p class='message'><em>“Don’t wish for it. Work for it.”</em> — Let’s get moving!</p>
-        <div class='footer'>
-            <p>&copy; " . date('Y') . " GoGain. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>
-";
+                    <html>
+                    <head>
+                        <style>
+                            body { font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px; }
+                            .container { background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                            h2 { color: #e74c3c; }
+                            .message { font-size: 16px; color: #2c3e50; line-height: 1.6; }
+                            .highlight { font-weight: bold; color: #e74c3c; }
+                            .footer { font-size: 12px; color: #6c757d; margin-top: 20px; text-align: center; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class='container'>
+                            <h2>Welcome to GoGain, {$fullName}! </h2>
+                            <p class='message'>Your account is now active. Log in with your email and password to start your fitness journey, track your progress, and push beyond your limits.</p>
+                            <p class='message'><em>“Don’t wish for it. Work for it.”</em> — Let’s get moving!</p>
+                            <div class='footer'>
+                                <p>&copy; " . date('Y') . " GoGain. All rights reserved.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    ";
 
                 sendMail($email, $subject, $body);
                 echo json_encode([
@@ -332,7 +332,7 @@ class UserController
         $email = trim($data['email']);
         $password = $data['password'];
 
-        // Fetch user from database
+        // Fetch user
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
@@ -343,42 +343,107 @@ class UserController
             return;
         }
 
-        // Update last login timestamp
+        // Update last login
         $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
         $updateStmt->execute([$user['id']]);
 
-        // JWT configuration
-        $secretKey = 'your_secret_key_here'; // Replace with env/config variable
+        // JWT config
+        $secretKey = 'your_secret_key_here';
         $issuedAt = time();
-        $expire = $issuedAt + 3600; // Token valid for 1 hour
 
-        $payload = [
+        $accessExpire = $issuedAt + (12 * 3600);
+        $accessPayload = [
             'iat' => $issuedAt,
-            'exp' => $expire,
+            'exp' => $accessExpire,
             'sub' => $user['id'],
             'email' => $user['email'],
             'role' => $user['role']
         ];
 
-        $jwt = JWT::encode($payload, $secretKey, 'HS256');
+        $accessToken = JWT::encode($accessPayload, $secretKey, 'HS256');
 
-        // Respond with success and token
+        $refreshExpire = $issuedAt + (7 * 24 * 60 * 60);
+        $refreshPayload = [
+            'iat' => $issuedAt,
+            'exp' => $refreshExpire,
+            'sub' => $user['id']
+        ];
+        $refreshToken = JWT::encode($refreshPayload, $secretKey, 'HS256');
+
+        $stmt = $this->pdo->prepare("UPDATE users SET refresh_token = ? WHERE id = ?");
+        $stmt->execute([$refreshToken, $user['id']]);
+
+
+        // Response
         http_response_code(200);
         echo json_encode([
             'success' => true,
             'message' => 'Login successful',
             'user' => [
                 'id' => $user['id'],
-                'fullName' => $user['fullName'], // Adjust to your actual DB field
+                'fullName' => $user['fullName'],
                 'email' => $user['email'],
                 'avatar' => $user['avatar'],
                 'last_login' => $user['last_login'],
                 'role' => $user['role'],
                 'location' => $user['location'] ?? null
             ],
-            'token' => $jwt
+            'token' => $accessToken,
+            'refresh_token' => $refreshToken
         ]);
     }
+
+
+    public function refreshToken()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $refreshToken = $data['refresh_token'];
+
+        $secretKey = 'your_secret_key_here';
+
+        try {
+            $decoded = JWT::decode($refreshToken, new Key($secretKey, 'HS256'));
+
+            // Check if refresh token is expired
+            if ($decoded->exp < time()) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Refresh token expired']);
+                return;
+            }
+
+            // Validate refresh token in DB
+            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ? AND refresh_token = ?");
+            $stmt->execute([$decoded->sub, $refreshToken]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Invalid refresh token']);
+                return;
+            }
+
+            // Generate new access token (1 min example)
+            $issuedAt = time();
+            $expire = $issuedAt + 60; // 1 min
+            $payload = [
+                'iat' => $issuedAt,
+                'exp' => $expire,
+                'sub' => $user['id'],
+                'email' => $user['email'],
+                'role' => $user['role']
+            ];
+            $newAccessToken = JWT::encode($payload, $secretKey, 'HS256');
+
+            echo json_encode([
+                'success' => true,
+                'token' => $newAccessToken
+            ]);
+        } catch (Exception $e) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Invalid refresh token']);
+        }
+    }
+
 
     public function ChangePassword()
     {
@@ -488,7 +553,7 @@ class UserController
             $userId = $_SESSION['user_id'];
 
             // Fetch user info (excluding password)
-            $stmt = $this->pdo->prepare("SELECT fullName, role, avatar FROM users WHERE id = ?");
+            $stmt = $this->pdo->prepare("SELECT fullName, role, avatar, last_login FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -638,9 +703,6 @@ class UserController
             ]);
         }
     }
-
-
-
 
     public function contactform()
     {

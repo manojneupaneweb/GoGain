@@ -56,10 +56,39 @@ const Contact = () => {
     }
 
     try {
-      // Verify user
-      await axios.get('/api/v1/user/verify-user', {
-        headers: { Authorization: `Bearer ${token}` },
+      const verifyUser = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        return false
+      };
+
+      try {
+        const response = await axios.get('/api/v1/user/verify-user', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: response.data.success, role: response.data.role };
+      } catch (error) {
+        console.error('Error verifying user:', error);
+        localStorage.removeItem('accessToken');
+        return false;
+      }
+    };
+
+    const { role } = await verifyUser();
+
+    if (role === 'trainer' || role === 'admin') {
+      toast.info(`⚠️ Access Denied: ${role}s cannot send message .`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
+
+
+      return;
+    }
 
       // Submit contact form
       const response = await axios.post('/api/v1/user/contactform', formData);

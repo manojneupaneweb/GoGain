@@ -26,7 +26,11 @@ try {
     } elseif ($method === 'POST' && preg_match('/\/admin\/change-password\/?$/', $uri)) {
         checkAdminAuth(); // middleware to ensure only admin can access
         $DashboardController->ChangePassword();
+    } elseif ($method === 'GET' && preg_match('/reportdata\/?$/', $uri)) {
+        checkAdminAuth();
+        $DashboardController->getReportData(); // or whatever method fetches the report
     }
+
     // all role == user
     elseif ($method === 'GET' && preg_match('/\/getalluserinformation\/?$/', $uri)) {
         checkAdminAuth();
@@ -42,6 +46,9 @@ try {
     elseif ($method === 'POST' && preg_match('/\/changestatus\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->changeOrderStatus();
+    } elseif ($method === 'GET' && preg_match('/\/getallorders\/?$/', $uri)) {
+        checkAdminAuth();
+        $DashboardController->getAllOrders();
     }
 
 
@@ -54,24 +61,17 @@ try {
     elseif ($method === 'GET' && preg_match('/\/getallusersfortrainer\/?$/', $uri)) {
         checkAuth();
         $DashboardController->getAllUsers();
-    }
-    elseif ($method === 'POST' && preg_match('/\/daily-activity\/?$/', $uri)) {
+    } elseif ($method === 'POST' && preg_match('/\/daily-activity\/?$/', $uri)) {
         checkAuth();
         $DashboardController->activityHistory();
     }
-    
-    
+
+
     // users routes
     elseif ($method === 'GET' && preg_match('/\/getuseractivity\/?$/', $uri)) {
         checkAuth();
         $DashboardController->getUserActivity();
-    }
-
-
-
-
-
-     else {
+    } else {
         http_response_code(404);
         echo json_encode(['message' => 'Route not found']);
     }

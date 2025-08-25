@@ -5,6 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Loading from '../../../Component/Loading.jsx';
 
+
 function AllProduct() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,7 +75,6 @@ function AllProduct() {
         throw new Error('Product ID is not defined. Please select a valid product.');
 
       }
-console.log(`Deleting product with ID: ${productToDelete.id}`);
 
       await axios.delete(`/api/v1/product/deleteproduct/${productToDelete.id}`, {
         headers: {
@@ -281,8 +281,8 @@ console.log(`Deleting product with ID: ${productToDelete.id}`);
                       key={number}
                       onClick={() => paginate(number)}
                       className={`px-3 py-1 rounded-md ${currentPage === number
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                         }`}
                     >
                       {number}

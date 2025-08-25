@@ -14,7 +14,7 @@ import {
   Bars3Icon,
   InboxIcon
 } from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import axios from 'axios';
 import handelLogout from '../../utils/Logout';
@@ -39,6 +39,7 @@ export default function AdminLayout() {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
+      console.log('User fetch response:', response.data);
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -103,6 +104,7 @@ export default function AdminLayout() {
       submenu: [
         { name: 'Pending', path: '/admin/orders/pending' },
         { name: 'Shipping', path: '/admin/orders/shipping' },
+        { name: 'Deleverd', path: '/admin/orders/deleverd' },
         { name: 'Complete', path: '/admin/orders/complete' },
         { name: 'Cancel', path: '/admin/orders/cancel' },
       ],
@@ -148,19 +150,19 @@ export default function AdminLayout() {
             <button
               onClick={() => toggleSubmenu(item.name)}
               className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 hover:bg-gray-700 ${openSubmenus[item.name]
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-300'
+                ? 'bg-gray-700 text-white'
+                : 'text-gray-300'
                 }`}
             >
               <div className="flex items-center space-x-3">
                 <item.icon className={`h-5 w-5 ${openSubmenus[item.name]
-                    ? 'text-white'
-                    : 'text-gray-400'
+                  ? 'text-white'
+                  : 'text-gray-400'
                   }`} />
                 {sidebarOpen && (
                   <span className={`${openSubmenus[item.name]
-                      ? 'font-medium'
-                      : ''
+                    ? 'font-medium'
+                    : ''
                     }`}>
                     {item.name}
                   </span>
@@ -297,7 +299,17 @@ export default function AdminLayout() {
               <div className="hidden md:flex items-center space-x-1 text-sm text-gray-300 font-semibold cursor-pointer">
                 <span>{format(currentTime, 'HH:mm:ss')}</span>
                 <span className="mx-1">•</span>
-                <span>Last login: Today</span>
+                <span>Last login:</span>
+                {user?.last_login && (
+                  <>
+                    <span className="mx-1">
+                      {format(parseISO(user.last_login), 'yyyy-MM-dd')}
+                    </span>
+                    <span className="mx-1">
+                      {format(parseISO(user.last_login), 'HH:mm:ss')}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -337,10 +349,10 @@ export default function AdminLayout() {
                     >
                       Settings
                     </a>
-                    <button 
-                    className="block px-4 py-2 text-sm transition-colors duration-300 text-gray-300 hover:bg-gray-700 hover:text-white"
-                    onClick={handelLogout}>
-                    Logout
+                    <button
+                      className="block px-4 py-2 text-sm transition-colors duration-300 text-gray-300 hover:bg-gray-700 hover:text-white"
+                      onClick={handelLogout}>
+                      Logout
 
                     </button>
                   </div>
@@ -352,7 +364,7 @@ export default function AdminLayout() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 transition-all duration-300 bg-gray-900">
-            <Outlet />
+          <Outlet />
         </main>
       </div>
     </div>
