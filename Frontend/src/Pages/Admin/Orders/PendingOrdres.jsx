@@ -314,6 +314,9 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
                 Total Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Delivery Address
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -392,6 +395,11 @@ const OrderRow = ({ order, index, onStatusChange }) => (
     <td className="px-6 py-4 whitespace-nowrap">
       <div className="text-sm text-gray-900">
         {order.total_price}
+      </div>
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap">
+      <div className="text-sm text-gray-900">
+        {order.delivery_address}
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap">

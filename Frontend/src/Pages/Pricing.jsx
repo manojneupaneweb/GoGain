@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
-import { initiateEsewaPayment, initiateKhaltiPayment } from '../utils/payment';
+import { initiateKhaltiPayment } from '../utils/payment';
 import { motion as Motion } from 'framer-motion';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,7 +8,6 @@ import { toast, ToastContainer } from 'react-toastify';
 function Pricing() {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [showPaymentPopup, setShowPaymentPopup] = useState(false);
-    const [activeTab, setActiveTab] = useState('esewa');
     const [total, setTotal] = useState(0);
     const verifyUser = async () => {
         const token = localStorage.getItem('accessToken');
@@ -56,29 +55,14 @@ function Pricing() {
         setShowPaymentPopup(true);
     };
 
-    // Handle payment via eSewa
-    const handleEsewaClick = (amount, plan) => {
-        localStorage.setItem(
-            'selectedPlan',
-            JSON.stringify({ name: plan.name, price: amount, duration: plan.duration })
-        );
-
-        const redirectLink = '/createplan';
-        initiateEsewaPayment(amount, 2736, redirectLink);
-        setShowPaymentPopup(false);
-    };
-
     // Handle payment via Khalti (placeholder)
     const handleKhaltiClick = (amount, plan) => {
-
         localStorage.setItem(
             'selectedPlan',
             JSON.stringify({ name: plan.name, price: amount, duration: plan.duration })
         );
-
-        const redirectLink = '/createplan';
+        const redirectLink = 'createplan';
         initiateKhaltiPayment(amount, 2736, redirectLink);
-        setShowPaymentPopup(false);
         setShowPaymentPopup(false);
     };
 
@@ -173,24 +157,9 @@ function Pricing() {
                         <div className="p-5">
                             <div className="flex border-b border-gray-100">
                                 <button
-                                    className={`flex-1 cursor-pointer py-3 px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'esewa'
-                                        ? 'text-orange-600 border-b-2 border-orange-600 font-semibold'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    onClick={() => setActiveTab('esewa')}
-                                >
-                                    <img
-                                        src="https://www.drupal.org/files/project-images/esewa.png"
-                                        alt="eSewa"
-                                        className="h-10 mx-auto"
-                                    />
-                                </button>
-                                <button
-                                    className={`flex-1 py-3 cursor-pointer px-4 font-medium text-sm uppercase tracking-wide transition-colors duration-200 ${activeTab === 'khalti'
-                                        ? 'text-purple-600 border-b-2 border-purple-600 font-semibold'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    onClick={() => setActiveTab('khalti')}
+                                    className={`flex-1 py-3 cursor-pointer px-4  text-sm uppercase tracking-wide transition-colors duration-200 
+                                        text-purple-600 border-b-2 border-purple-600 font-semibold
+                                        `}
                                 >
                                     <img
                                         src="https://cdn.selldone.com/app/contents/community/posts/images/CleanShot20221017at1413242xpng46cc84efd2abd15fcbd79171f835be14.png"
@@ -202,70 +171,37 @@ function Pricing() {
 
                             {/* Payment Details */}
                             <div className="mt-6 space-y-4">
-                                {activeTab === 'esewa' ? (
-                                    <>
-                                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-                                            <h4 className="font-medium text-orange-800 mb-2">
-                                                Test Credentials
-                                            </h4>
-                                            <ul className="text-sm text-gray-600 space-y-1">
-                                                <li>
-                                                    <strong>ID:</strong> <code>9806800001-5</code>
-                                                </li>
-                                                <li>
-                                                    <strong>Password:</strong> <code>Nepal@123</code>
-                                                </li>
-                                                <li>
-                                                    <strong>MPIN:</strong> <code>1122</code>
-                                                </li>
-                                            </ul>
-                                        </div>
+                                <>
+                                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                                        <h4 className="font-medium text-purple-800 mb-2">
+                                            Test Credentials
+                                        </h4>
+                                        <ul className="text-sm text-gray-600 space-y-1">
+                                            <li>
+                                                <strong>Mobile:</strong>{' '}
+                                                <code>9800000000-9800000005</code>
+                                            </li>
+                                            <li>
+                                                <strong>MPIN:</strong> <code>1111</code>
+                                            </li>
+                                            <li>
+                                                <strong>OTP:</strong> <code>987654</code>
+                                            </li>
+                                        </ul>
+                                    </div>
 
-                                        <p className="text-gray-500 text-sm mb-4">
-                                            You'll be redirected to eSewa to complete your payment of{' '}
-                                            <strong>रु. {total}</strong>
-                                        </p>
-                                        <button
-                                            onClick={() => handleEsewaClick(total, selectedPlan)}
-                                            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors duration-200"
-                                        >
-                                            <FaLock className="text-sm" />
-                                            Pay with eSewa
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                                            <h4 className="font-medium text-purple-800 mb-2">
-                                                Test Credentials
-                                            </h4>
-                                            <ul className="text-sm text-gray-600 space-y-1">
-                                                <li>
-                                                    <strong>Mobile:</strong>{' '}
-                                                    <code>9800000000-9800000005</code>
-                                                </li>
-                                                <li>
-                                                    <strong>MPIN:</strong> <code>1111</code>
-                                                </li>
-                                                <li>
-                                                    <strong>OTP:</strong> <code>987654</code>
-                                                </li>
-                                            </ul>
-                                        </div>
-
-                                        <p className="text-gray-500 text-sm mb-4">
-                                            You'll be redirected to Khalti to complete your payment of{' '}
-                                            <strong>रु. {total}</strong>
-                                        </p>
-                                        <button
-                                            onClick={() => handleKhaltiClick(total, selectedPlan)}
-                                            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors duration-200"
-                                        >
-                                            <FaShieldAlt className="text-sm" />
-                                            Pay with Khalti
-                                        </button>
-                                    </>
-                                )}
+                                    <p className="text-gray-500 text-sm mb-4">
+                                        You'll be redirected to Khalti to complete your payment of{' '}
+                                        <strong>रु. {total}</strong>
+                                    </p>
+                                    <button
+                                        onClick={() => handleKhaltiClick(total, selectedPlan)}
+                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors duration-200"
+                                    >
+                                        <FaShieldAlt className="text-sm" />
+                                        Pay with Khalti
+                                    </button>
+                                </>
                             </div>
 
                             <p className="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center">

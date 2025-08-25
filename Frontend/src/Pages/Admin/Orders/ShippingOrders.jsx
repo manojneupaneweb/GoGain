@@ -107,13 +107,13 @@ const ErrorDisplay = ({ error, onRetry }) => (
   </div>
 );
 
-const ConfirmationModal = ({ 
-  isOpen, 
-  onClose, 
-  orderId, 
-  newStatus, 
-  onConfirm, 
-  processing 
+const ConfirmationModal = ({
+  isOpen,
+  onClose,
+  orderId,
+  newStatus,
+  onConfirm,
+  processing
 }) => {
   if (!isOpen) return null;
 
@@ -144,13 +144,12 @@ const ConfirmationModal = ({
           <button
             onClick={onConfirm}
             disabled={processing}
-            className={`px-4 py-2 rounded-md text-white ${
-              newStatus === "completed"
+            className={`px-4 py-2 rounded-md text-white ${newStatus === "completed"
                 ? "bg-green-600 hover:bg-green-700"
                 : newStatus === "cancelled"
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
-            } disabled:opacity-50 min-w-24 flex justify-center`}
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } disabled:opacity-50 min-w-24 flex justify-center`}
           >
             {processing ? (
               <>
@@ -170,13 +169,13 @@ const ConfirmationModal = ({
   );
 };
 
-const CancelModal = ({ 
-  isOpen, 
-  onClose, 
-  orderId, 
-  onConfirm, 
+const CancelModal = ({
+  isOpen,
+  onClose,
+  orderId,
+  onConfirm,
   processing,
-  cancellationReasons 
+  cancellationReasons
 }) => {
   const [cancelReason, setCancelReason] = useState("");
   const [customReason, setCustomReason] = useState("");
@@ -192,10 +191,10 @@ const CancelModal = ({
       toast.error("Please provide a cancellation reason");
       return;
     }
-    
+
     const finalReason = cancelReason === "other" ? customReason : cancelReason;
     onConfirm(finalReason);
-    
+
     // Reset form
     setCancelReason("");
     setCustomReason("");
@@ -279,7 +278,7 @@ const CancelModal = ({
 
 const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) => {
   const ShippingOrders = orders.filter(order => order.order_status === "shipping");
-  
+
   if (ShippingOrders.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -314,6 +313,9 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
                 Total Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Delivery Address
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -326,9 +328,9 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {ShippingOrders.map((order, index) => (
-              <OrderRow 
-                key={order.id} 
-                order={order} 
+              <OrderRow
+                key={order.id}
+                order={order}
                 index={index}
                 onStatusChange={onStatusChange}
               />
@@ -337,7 +339,7 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
         </table>
       </div>
 
-      <Pagination 
+      <Pagination
         page={page}
         totalPages={totalPages}
         totalItems={ShippingOrders.length}
@@ -361,10 +363,10 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap flex">
-      <img 
+      <img
         src={order.product_image}
         className="w-10 h-10 rounded-md object-cover mr-2"
-        alt={order.product_name} 
+        alt={order.product_name}
       />
       <div className="text-sm text-gray-900">
         {order.product_name?.substring(0, 8) || "N/A"}
@@ -378,10 +380,10 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap flex">
-      <img 
+      <img
         src={order.avatar}
         className="w-10 h-10 rounded-md object-cover mr-2"
-        alt={order.fullName} 
+        alt={order.fullName}
       />
       <div className="text-sm text-gray-900">
         {order.fullName?.substring(0, 8) || "N/A"}
@@ -396,6 +398,11 @@ const OrderRow = ({ order, index, onStatusChange }) => (
     </td>
     <td className="px-6 py-4 whitespace-nowrap">
       <div className="text-sm text-gray-900">
+        {order.delivery_address}
+      </div>
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap">
+      <div className="text-sm text-gray-900">
         {new Date(order.created_at).toLocaleDateString()}
       </div>
       <div className="text-xs text-gray-500">
@@ -406,9 +413,8 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap">
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center ${
-        STATUS_CONFIG[order.order_status]?.color || "bg-gray-100 text-gray-800"
-      }`}>
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center ${STATUS_CONFIG[order.order_status]?.color || "bg-gray-100 text-gray-800"
+        }`}>
         {STATUS_CONFIG[order.order_status]?.icon}
         {STATUS_CONFIG[order.order_status]?.label || order.order_status}
       </span>
@@ -439,18 +445,16 @@ const Pagination = ({ page, totalPages, totalItems, itemsPerPage, onPageChange }
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className={`px-3 py-1 rounded-md ${
-          page === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-        } text-white text-sm`}
+        className={`px-3 py-1 rounded-md ${page === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+          } text-white text-sm`}
       >
         Previous
       </button>
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className={`px-3 py-1 rounded-md ${
-          page >= totalPages ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
-        } text-sm`}
+        className={`px-3 py-1 rounded-md ${page >= totalPages ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+          } text-sm`}
       >
         Next
       </button>
@@ -473,7 +477,7 @@ const ShippingOrders = () => {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get(`/api/v1/admin/getallorders`, {
         params: { page, limit: ITEMS_PER_PAGE, status: 'shipping' },
@@ -529,7 +533,7 @@ const ShippingOrders = () => {
 
   const changeOrderStatus = async (reason = "") => {
     setProcessing(true);
-    
+
     try {
       const response = await axios.post(
         '/api/v1/admin/changestatus',
@@ -545,7 +549,7 @@ const ShippingOrders = () => {
           }
         }
       );
-      
+
       console.log('shipping order response:', response);
 
       // Update local state
@@ -572,7 +576,7 @@ const ShippingOrders = () => {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <ToastContainer />
-      
+
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={closeConfirmation}
@@ -581,7 +585,7 @@ const ShippingOrders = () => {
         onConfirm={() => changeOrderStatus()}
         processing={processing}
       />
-      
+
       <CancelModal
         isOpen={showCancelModal}
         onClose={closeConfirmation}
@@ -608,7 +612,7 @@ const ShippingOrders = () => {
           transition={{ delay: 0.2 }}
           className="bg-white rounded-xl shadow-sm overflow-hidden"
         >
-          <OrderTable 
+          <OrderTable
             orders={orders}
             onStatusChange={showConfirmation}
             page={page}

@@ -293,6 +293,9 @@ class DashboardController
     public function changeOrderStatus()
     {
         global $pdo;
+
+        header('Content-Type: application/json');
+
         try {
             $data = json_decode(file_get_contents("php://input"), true);
 
@@ -301,18 +304,21 @@ class DashboardController
             $reason = $data['cancelReason'] ?? null;
 
             if (!$orderId || !$status) {
-                echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required fields: orderId or status'
+                ]);
                 return;
             }
 
-            // Update order status
+            // ✅ Update order status in the database
             $stmt = $pdo->prepare("UPDATE orders SET order_status = ?, reason = ? WHERE id = ?");
             $stmt->execute([$status, $reason, $orderId]);
 
-            // If status is delivered, fetch user and product info & send email
+            // ✅ Send delivery email if status is delivered
             if (strtolower($status) === 'delivered') {
                 $stmt = $pdo->prepare("
-                SELECT u.email, p.name AS product_name, p.price, p.description, o.quantity
+                SELECT u.email, u.delivery_address, p.name AS product_name, p.price, p.description, o.quantity
                 FROM orders o
                 JOIN users u ON o.user_id = u.id
                 JOIN products p ON o.product_id = p.id
@@ -326,36 +332,37 @@ class DashboardController
                     $subject = "Your Order #$orderId has been Delivered!";
 
                     $messageBody = "
-                    <html>
-                    <body>
-                        <h2>Order Delivered Successfully</h2>
-                        <p>Hi, your order has been delivered. Here are the details:</p>
-                        <table border='1' cellpadding='10' cellspacing='0' style='border-collapse: collapse;'>
-                            <tr>
-                                <th>Product Name</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                            </tr>
-                            <tr>
-                                <td>{$orderInfo['product_name']}</td>
-                                <td>{$orderInfo['description']}</td>
-                                <td>{$orderInfo['quantity']}</td>
-                                <td>Rs. {$orderInfo['price']}</td>
-                            </tr>
-                        </table>
-                        <p>Thank you for shopping with us!</p>
-                    </body>
-                    </html>
+                <html>
+                <body>
+                    <h2>Order Delivered Successfully</h2>
+                    <p>Hi, your order has been delivered to <strong>{$orderInfo['delivery_address']}</strong>. Here are the details:</p>
+                    <table border='1' cellpadding='10' cellspacing='0' style='border-collapse: collapse;'>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                        </tr>
+                        <tr>
+                            <td>{$orderInfo['product_name']}</td>
+                            <td>{$orderInfo['description']}</td>
+                            <td>{$orderInfo['quantity']}</td>
+                            <td>Rs. {$orderInfo['price']}</td>
+                        </tr>
+                    </table>
+                    <p>Thank you for shopping with us!</p>
+                </body>
+                </html>
                 ";
 
                     sendMail($to, $subject, $messageBody);
                 }
             }
 
+            // ✅ Return JSON response
             echo json_encode([
                 'success' => true,
-                'message' => 'Order status updated',
+                'message' => 'Order status updated successfully',
                 'orderId' => $orderId,
                 'status' => $status,
                 'reason' => $reason,
@@ -369,7 +376,6 @@ class DashboardController
             ]);
         }
     }
-
 
     public function getAllUserPlans()
     {
@@ -576,7 +582,7 @@ class DashboardController
             if ($status) {
                 $stmt = $pdo->prepare("
                     SELECT 
-                        o.id, o.order_status, o.quantity, o.total_price, o.created_at, o.reason,
+                        o.id, o.order_status, o.quantity, o.total_price,o.delivery_address,  o.created_at, o.reason,
                         u.id AS user_id, u.fullName, u.avatar, u.email, u.phone,
                         p.id AS product_id, p.name AS product_name, p.image AS product_image, p.price AS product_price
                     FROM orders o

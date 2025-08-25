@@ -927,4 +927,41 @@ class UserController
             ]);
         }
     }
+
+    public function deliveryAddress()
+    {
+        global $pdo;
+
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $delivery_address = $data['address'] ?? null;
+
+        if (!$delivery_address) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Address is required']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+            $stmt = $pdo->prepare("UPDATE users SET delivery_address = ? WHERE id = ?");
+            $stmt->execute([$delivery_address, $userId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Delivery address added successfully.',
+                'delivery_address' => $delivery_address,
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error']);
+        }
+    }
 }

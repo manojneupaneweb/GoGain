@@ -285,6 +285,15 @@ class OrderController
                 throw new Exception("Cart is empty");
             }
 
+            // ✅ Fetch delivery address from users table
+            $stmtUser = $this->pdo->prepare("SELECT fullName, email, delivery_address FROM users WHERE id = :id LIMIT 1");
+            $stmtUser->execute([':id' => $userId]);
+            $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if (!$user) {
+                throw new Exception("User not found");
+            }
+            $deliveryAddress = $user['delivery_address'] ?? '';
+
             $createdOrders = [];
 
             foreach ($cartItems as $item) {
@@ -292,19 +301,20 @@ class OrderController
                 $id = $this->generateUUID();
 
                 $sql = "INSERT INTO orders 
-                        (id, user_id, product_id, quantity, total_price, payment_status, order_status) 
-                    VALUES 
-                        (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status)";
+                    (id, user_id, product_id, quantity, total_price, payment_status, order_status, delivery_address) 
+                VALUES 
+                    (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status, :delivery_address)";
 
                 $stmt = $this->pdo->prepare($sql);
                 $success = $stmt->execute([
-                    ':id'             => $id,
-                    ':user_id'        => $userId,
-                    ':product_id'     => $item['product_id'],
-                    ':quantity'       => $item['quantity'],
-                    ':total_price'    => $totalPrice,
-                    ':payment_status' => $paymentStatus,
-                    ':order_status'   => $orderStatus,
+                    ':id'               => $id,
+                    ':user_id'          => $userId,
+                    ':product_id'       => $item['product_id'],
+                    ':quantity'         => $item['quantity'],
+                    ':total_price'      => $totalPrice,
+                    ':payment_status'   => $paymentStatus,
+                    ':order_status'     => $orderStatus,
+                    ':delivery_address' => $deliveryAddress
                 ]);
 
                 if (!$success) {
@@ -323,28 +333,13 @@ class OrderController
             // Clear cart only after successful order creation
             $this->deleteCartItemsByUser($userId);
 
-            // ✅ Fetch user info
-            $sqlUser = "SELECT fullName, email FROM users WHERE id = :id LIMIT 1";
-            $stmtUser = $this->pdo->prepare($sqlUser);
-            $stmtUser->execute([':id' => $userId]);
-            $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
-            //fatch product 
-
-            if (!$user) {
-                throw new Exception("User not found");
-            }
-
             // ✅ Prepare email
             $to = $user['email'];
             $subject = "Order Confirmation - Thank you for your purchase";
 
-            // Build table of ordered items
-            // Build table of ordered items with S.No
             $tableRows = "";
             $sno = 1;
             foreach ($createdOrders as $order) {
-                // Fetch product info
                 $sqlProduct = "SELECT name, image FROM products WHERE id = :id LIMIT 1";
                 $stmtProduct = $this->pdo->prepare($sqlProduct);
                 $stmtProduct->execute([':id' => $order['product_id']]);
@@ -354,50 +349,49 @@ class OrderController
                 $productImage = $product['image'] ?? "";
 
                 $tableRows .= "
-        <tr>
-            <td style='text-align: center;'>{$sno}</td>
-            <td>
-                " . ($productImage ? "<img src='{$productImage}' alt='{$productName}' width='50' style='vertical-align: middle; margin-right: 8px;' />" : "") . "
-                {$productName}
-            </td>
-            <td style='text-align: center;'>{$order['quantity']}</td>
-            <td style='text-align: right;'>{$order['price']}</td>
-            <td style='text-align: right;'>{$order['total']}</td>
-        </tr>
-    ";
+            <tr>
+                <td style='text-align: center;'>{$sno}</td>
+                <td>
+                    " . ($productImage ? "<img src='{$productImage}' alt='{$productName}' width='50' style='vertical-align: middle; margin-right: 8px;' />" : "") . "
+                    {$productName}
+                </td>
+                <td style='text-align: center;'>{$order['quantity']}</td>
+                <td style='text-align: right;'>{$order['price']}</td>
+                <td style='text-align: right;'>{$order['total']}</td>
+            </tr>
+        ";
                 $sno++;
             }
 
             $messageBody = "
-            <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
-                <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
-                <p>Thank you for shopping with us! Your order has been successfully placed. Here are the details:</p>
+        <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
+            <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
+            <p>Thank you for shopping with us! Your order has been successfully placed. Delivery Address: <strong>{$deliveryAddress}</strong></p>
 
-                <table border='0' cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;'>
-                    <thead>
-                        <tr style='background-color: #2E86C1; color: #fff;'>
-                            <th style='text-align: center;'>S.No</th>
-                            <th style='text-align: left;'>Product</th>
-                            <th style='text-align: center;'>Quantity</th>
-                            <th style='text-align: right;'>Price</th>
-                            <th style='text-align: right;'>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        $tableRows
-                    </tbody>
-                </table>
+            <table border='0' cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;'>
+                <thead>
+                    <tr style='background-color: #2E86C1; color: #fff;'>
+                        <th style='text-align: center;'>S.No</th>
+                        <th style='text-align: left;'>Product</th>
+                        <th style='text-align: center;'>Quantity</th>
+                        <th style='text-align: right;'>Price</th>
+                        <th style='text-align: right;'>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    $tableRows
+                </tbody>
+            </table>
 
-                <p style='margin-top: 20px;'>We will notify you once your order is shipped. If you have any questions, feel free to reply to this email.</p>
+            <p style='margin-top: 20px;'>We will notify you once your order is shipped. If you have any questions, feel free to reply to this email.</p>
 
-                <p style='margin-top: 30px; font-weight: bold; color: #2E86C1;'>Thank you for choosing us!</p>
-                <p style='font-size: 12px; color: #777;'>This is an automated email, please do not reply directly.</p>
-            </div>
-            ";
-            // ✅ Send mail 
+            <p style='margin-top: 30px; font-weight: bold; color: #2E86C1;'>Thank you for choosing us!</p>
+            <p style='font-size: 12px; color: #777;'>This is an automated email, please do not reply directly.</p>
+        </div>
+        ";
+
             sendMail($to, $subject, $messageBody);
 
-            // ✅ Final response
             return [
                 'success' => true,
                 'orders'  => $createdOrders
@@ -409,6 +403,7 @@ class OrderController
             ];
         }
     }
+
 
 
 
@@ -456,10 +451,6 @@ class OrderController
 
 
 
-
-
-
-
 class PlanController
 {
     private $pdo;
@@ -474,9 +465,8 @@ class PlanController
         header('Content-Type: application/json');
         session_start();
 
-        global $pdo; // your PDO instance
+        global $pdo;
 
-        // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -485,68 +475,136 @@ class PlanController
 
         try {
             $userId = $_SESSION['user_id'];
-
-            // Decode JSON input
             $input = json_decode(file_get_contents('php://input'), true);
 
             if (!isset($input['planItem'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Missing planItem in request']);
+                echo json_encode(['success' => false, 'message' => 'Missing planItem']);
                 return;
             }
 
             $planItem = $input['planItem'];
 
-            // Validate required fields
             if (empty($planItem['name']) || empty($planItem['duration'])) {
                 http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Missing required fields: name or duration']);
+                echo json_encode(['success' => false, 'message' => 'Missing name or duration']);
                 return;
             }
 
             $planName = $planItem['name'];
             $duration = $planItem['duration'];
-            $startDate = date('Y-m-d');
+            $today = date('Y-m-d');
+            $now = date('Y-m-d H:i:s');
 
-            // Calculate expire date based on duration
-            $expireDate = match ($duration) {
-                '1 Month' => date('Y-m-d', strtotime('+30 days')),
-                '3 Months' => date('Y-m-d', strtotime('+90 days')),
-                '6 Months' => date('Y-m-d', strtotime('+180 days')),
-                '1 Year' => date('Y-m-d', strtotime('+365 days')),
-                default => date('Y-m-d', strtotime('+30 days')),
+            // Map duration to days
+            $durationDays = match ($duration) {
+                '1 Month' => 30,
+                '3 Months' => 90,
+                '6 Months' => 180,
+                '1 Year' => 365,
+                default => 30,
             };
 
-            // Generate UUID for id
-            $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
-
-            // Insert into DB
+            // Get latest plan of user
             $stmt = $pdo->prepare("
-            INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date)
-            VALUES (:id, :user_id, :plan_name, :start_date, :expire_date)
+            SELECT * FROM user_plans 
+            WHERE user_id = :user_id 
+            ORDER BY expire_date DESC LIMIT 1
         ");
+            $stmt->execute([':user_id' => $userId]);
+            $lastPlan = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $stmt->bindParam(':id', $id);
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->bindParam(':plan_name', $planName);
-            $stmt->bindParam(':start_date', $startDate);
-            $stmt->bindParam(':expire_date', $expireDate);
+            if ($lastPlan) {
+                if ($lastPlan['plan_name'] === $planName) {
+                    // SAME PLAN → extend expiry
+                    $newExpireDate = date('Y-m-d', strtotime($lastPlan['expire_date'] . " +{$durationDays} days"));
 
-            $stmt->execute();
+                    $update = $pdo->prepare("
+                    UPDATE user_plans 
+                    SET expire_date = :expire_date, updated_at = :updated_at 
+                    WHERE id = :id
+                ");
+                    $update->execute([
+                        ':expire_date' => $newExpireDate,
+                        ':updated_at' => $now,
+                        ':id' => $lastPlan['id']
+                    ]);
 
-            // Success response
-            http_response_code(201);
-            echo json_encode([
-                'success' => true,
-                'message' => 'Plan created successfully',
-                'data' => [
-                    'id' => $id,
-                    'user_id' => $userId,
-                    'plan_name' => $planName,
-                    'start_date' => $startDate,
-                    'expire_date' => $expireDate
-                ]
-            ]);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Plan extended successfully',
+                        'data' => [
+                            'plan_name' => $planName,
+                            'start_date' => $lastPlan['start_date'],
+                            'expire_date' => $newExpireDate
+                        ]
+                    ]);
+                    return;
+                } else {
+                    // DIFFERENT PLAN → delete all past plans of this user
+                    $pdo->prepare("DELETE FROM user_plans WHERE user_id = :user_id")
+                        ->execute([':user_id' => $userId]);
+
+                    $newExpireDate = date('Y-m-d', strtotime("+{$durationDays} days"));
+                    $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
+
+                    $insert = $pdo->prepare("
+                    INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
+                    VALUES (:id, :user_id, :plan_name, :start_date, :expire_date, :created_at, :updated_at)
+                ");
+                    $insert->execute([
+                        ':id' => $id,
+                        ':user_id' => $userId,
+                        ':plan_name' => $planName,
+                        ':start_date' => $today,
+                        ':expire_date' => $newExpireDate,
+                        ':created_at' => $now,
+                        ':updated_at' => $now
+                    ]);
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Past plans deleted, new plan added successfully',
+                        'data' => [
+                            'id' => $id,
+                            'plan_name' => $planName,
+                            'start_date' => $today,
+                            'expire_date' => $newExpireDate
+                        ]
+                    ]);
+                    return;
+                }
+            } else {
+                // NO PLAN → insert new
+                $newExpireDate = date('Y-m-d', strtotime("+{$durationDays} days"));
+                $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
+
+                $insert = $pdo->prepare("
+                INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
+                VALUES (:id, :user_id, :plan_name, :start_date, :expire_date, :created_at, :updated_at)
+            ");
+                $insert->execute([
+                    ':id' => $id,
+                    ':user_id' => $userId,
+                    ':plan_name' => $planName,
+                    ':start_date' => $today,
+                    ':expire_date' => $newExpireDate,
+                    ':created_at' => $now,
+                    ':updated_at' => $now
+                ]);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Plan created successfully',
+                    'data' => [
+                        'id' => $id,
+                        'plan_name' => $planName,
+                        'start_date' => $today,
+                        'expire_date' => $newExpireDate
+                    ]
+                ]);
+                return;
+            }
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([

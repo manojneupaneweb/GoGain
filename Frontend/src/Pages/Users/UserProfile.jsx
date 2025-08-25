@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 
 function UserProfile() {
   const [profileData, setProfileData] = useState({
@@ -10,6 +12,7 @@ function UserProfile() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -315,9 +318,12 @@ function UserProfile() {
                         <button
                           className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-300 text-sm"
                           disabled={isLoading}
+                          onClick={() => navigate('/pricing')}
                         >
                           {isLoading ? 'Processing...' : 'Upgrade Plan'}
                         </button>
+
+
                       </div>
                     ))}
                   </div>

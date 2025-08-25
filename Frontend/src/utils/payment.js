@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import CryptoJS from "crypto-js";
 import axios from 'axios';
+import { toast } from "react-toastify";
 
 
 
@@ -56,22 +57,28 @@ export const initiateEsewaPayment = (amount, productId, redirectlink) => {
 export const initiateKhaltiPayment = async (amount, productId, redirectLink) => {
   try {
     const payload = {
-      amount: amount * 100, 
+      amount: amount * 100, // Khalti expects paisa
       productId,
       redirectLink: redirectLink || "paymentsuccess",
     };
 
-    const response = await axios.post("http://localhost:8000/api/v1/payment/khalti/initiate", payload, {
-      headers: { "Content-Type": "application/json" },
+    const response = await axios.post("/api/v1/payment/khalti/initiate", payload, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        "Content-Type": "application/json"
+      },
     });
-    console.log('payment response:', response);
 
     if (response.data && response.data.payment_url) {
+      // Redirect user to Khalti checkout page
       window.location.href = response.data.payment_url;
     } else {
       console.error("Payment initiation failed", response);
+      toast.error("Payment initiation failed. Try again.");
     }
   } catch (error) {
-    console.error("Request failed", error);
+    console.error(error.response?.data || error.message);
+    toast.error("Payment error. Try again.");
   }
 };
+

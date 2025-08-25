@@ -49,6 +49,9 @@ try {
     } elseif ($method === 'GET' && preg_match('/\/myorders\/?$/', $uri)) {
         checkAuth(); // 
         $userController->getMyOrders();
+    } elseif ($method === 'POST' && preg_match('/\/deliveryaddress\/?$/', $uri)) {
+        checkAuth(); // 
+        $userController->deliveryAddress();
     }
     //verify user login or not 
     elseif ($method === 'GET' && preg_match('/\/verify-user\/?$/', $uri)) {
