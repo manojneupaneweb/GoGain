@@ -1,7 +1,12 @@
 <?php
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 function checkAuth()
 {
@@ -31,7 +36,7 @@ function checkAuth()
 
     $token = trim(substr($authHeader, 7)); 
 
-    $secretKey = 'your_secret_key_here'; 
+    $secretKey = $_ENV['ACCESS_TOKEN_SECRET'];
 
     try {
         $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));

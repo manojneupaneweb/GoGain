@@ -3,35 +3,29 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
 
-require 'vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-/**
- * Send email using Gmail SMTP
- * 
- * @param string $to Recipient email address
- * @param string $subject Email subject
- * @param string $messageBody HTML email content
- * @return array Result array with success status and message
- */
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+
 function sendMail($to, $subject, $messageBody) {
     $mail = new PHPMailer(true);
 
     try {
         // Server settings
-        $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+        $mail->SMTPDebug = SMTP::DEBUG_OFF; 
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'randome255@gmail.com';
-        $mail->Password   = 'iqnx wdzq vnyw epoh';
+        $mail->Username   = $_ENV['mail'];
+        $mail->Password   = $_ENV['mail_password'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
         $mail->Port       = 587;           
         
-        // Recipients
-        $mail->setFrom('randome255@gmail.com', 'GoGain');
+        $mail->setFrom($_ENV['mail'], 'GoGain');
         $mail->addAddress($to); 
         
-        // Content
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $messageBody;
@@ -50,5 +44,4 @@ function sendMail($to, $subject, $messageBody) {
         ];
     }
 }
-
 ?>

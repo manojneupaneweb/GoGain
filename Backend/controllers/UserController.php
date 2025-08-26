@@ -2,8 +2,11 @@
 require_once __DIR__ . '/../models/user.model.php';
 require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
-
+require_once __DIR__ . '/../vendor/autoload.php';
 require 'vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 use Ramsey\Uuid\Uuid;
 
@@ -19,6 +22,20 @@ class UserController
         $this->pdo = $pdo;
     }
 
+    // helper to convert "1d", "2h", "30m"
+    private function convertExpiry($expiry)
+    {
+        switch (substr($expiry, -1)) {
+            case 'd':
+                return (int)$expiry * 86400;
+            case 'h':
+                return (int)$expiry * 3600;
+            case 'm':
+                return (int)$expiry * 60;
+            default:
+                return (int)$expiry; // assume seconds
+        }
+    }
     public function sendOtp()
     {
         header('Content-Type: application/json');
@@ -347,32 +364,31 @@ class UserController
         $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
         $updateStmt->execute([$user['id']]);
 
-        // JWT config
-        $secretKey = 'your_secret_key_here';
         $issuedAt = time();
 
-        $accessExpire = $issuedAt + (12 * 3600);
+        // Access Token
+        $accessTtl = $this->convertExpiry($_ENV['ACCESS_TOKEN_EXPIRY']);
         $accessPayload = [
             'iat' => $issuedAt,
-            'exp' => $accessExpire,
+            'exp' => $issuedAt + $accessTtl,
             'sub' => $user['id'],
             'email' => $user['email'],
             'role' => $user['role']
         ];
+        $accessToken = JWT::encode($accessPayload, $_ENV['ACCESS_TOKEN_SECRET'], 'HS256');
 
-        $accessToken = JWT::encode($accessPayload, $secretKey, 'HS256');
-
-        $refreshExpire = $issuedAt + (7 * 24 * 60 * 60);
+        // Refresh Token
+        $refreshTtl = $this->convertExpiry($_ENV['REFRESH_TOKEN_EXPIRY']);
         $refreshPayload = [
             'iat' => $issuedAt,
-            'exp' => $refreshExpire,
+            'exp' => $issuedAt + $refreshTtl,
             'sub' => $user['id']
         ];
-        $refreshToken = JWT::encode($refreshPayload, $secretKey, 'HS256');
+        $refreshToken = JWT::encode($refreshPayload, $_ENV['REFRESH_TOKEN_SECRET'], 'HS256');
 
+        // Save refresh token
         $stmt = $this->pdo->prepare("UPDATE users SET refresh_token = ? WHERE id = ?");
         $stmt->execute([$refreshToken, $user['id']]);
-
 
         // Response
         http_response_code(200);
@@ -399,7 +415,7 @@ class UserController
         $data = json_decode(file_get_contents('php://input'), true);
         $refreshToken = $data['refresh_token'];
 
-        $secretKey = 'your_secret_key_here';
+        $secretKey = $_ENV['REFRESH_TOKEN_SECRET'];
 
         try {
             $decoded = JWT::decode($refreshToken, new Key($secretKey, 'HS256'));

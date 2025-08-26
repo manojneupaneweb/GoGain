@@ -39,12 +39,13 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       const { email, password } = formData;
       const res = await axios.post('/api/v1/user/login', { email, password });
+      console.log('res login', res);
 
       if (res.data.success) {
         localStorage.setItem('accessToken', res.data.token);
         localStorage.setItem('refreshToken', res.data.refresh_token);
-      }     
-      
+      }
+
       toast.success('Login successful!');
       onSuccess();
     } catch (err) {

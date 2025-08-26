@@ -1,13 +1,17 @@
 <?php
-require 'vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 use Cloudinary\Cloudinary;
+use Dotenv\Dotenv;
 
 $cloudinary = new Cloudinary([
     'cloud' => [
-        'cloud_name' => 'gogain',
-        'api_key'    => '955313683614897',
-        'api_secret' => 'pm6pb-ceo1ai2vgfXfGQ_7kY8E0',
+        'cloud_name' => $_ENV['CLOUDENIRAY_cloud_name'],
+        'api_key'    => $_ENV['CLOUDENIRAY_api_key'],
+        'api_secret' => $_ENV['CLOUDENIRAY_api_secret'],
     ],
 ]);
 

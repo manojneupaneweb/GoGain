@@ -1,7 +1,12 @@
 <?php
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 function checkAdminAuth()
 {
@@ -30,7 +35,7 @@ function checkAdminAuth()
     }
 
     $token = substr($authHeader, 7);
-    $secretKey = 'your_secret_key_here'; // Replace with your actual secret key
+   $secretKey = $_ENV['ACCESS_TOKEN_SECRET'];
 
     try {
         // Decode and verify the token

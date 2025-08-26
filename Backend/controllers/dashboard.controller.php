@@ -136,6 +136,7 @@ class DashboardController
             ]);
         }
     }
+    
     public function ChangeRole()
     {
         global $pdo;
