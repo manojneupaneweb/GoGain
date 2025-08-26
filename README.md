@@ -1,6 +1,6 @@
 # 🏋️‍♂️ GoGain – Gym Membership Management System  
 
-GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, buy gym releted product and member progress – all in one place.  
+GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, member progress, and even sell gym-related products – all in one place.  
 It is built with a **responsive, user-friendly UI** and follows **industry standards** in backend & frontend development.  
 
 ---
@@ -14,13 +14,15 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 - View and manage personal profile  
 - Track membership status and expiry date  
 - Access workout plans & trainer info  
+- Buy **gym-related products** (supplements, equipment, accessories)  
 - See testimonials and transformation stories  
 
 ### 🏢 Admin Features
-- Dashboard overview (members, trainers, payments, plans)  
+- Dashboard overview (members, trainers, payments, plans, products)  
 - Add/Edit/Delete gym plans (e.g., Basic, Premium, Yearly)  
 - Manage trainers (expertise, availability, profiles)  
 - Manage members & their subscriptions  
+- Manage **products** (add, update, delete, inventory tracking)  
 - Track payments & invoices  
 - Automated membership expiry updates  
 - Analytics & reports  
@@ -30,14 +32,15 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 - Smooth animations (Framer Motion)  
 - Carousel for trainers & testimonials  
 - Dark/Light mode support  
+- Clean shopping & checkout experience  
 
 ---
 
 ## 🛠️ Tech Stack  
 
 - **Frontend:** React.js, Tailwind CSS, Axios  
-- **Backend:** PHP 
-- **Database:** MySQL   
+- **Backend:** Node.js, Express.js / PHP (depending on deployment)  
+- **Database:** MySQL / MongoDB  
 - **Payment Integration:** Khalti, eSewa  
 - **Authentication:** JWT (JSON Web Tokens)  
 - **Other Tools:** Git, GitHub, Postman  
@@ -114,6 +117,8 @@ GoGain/
 * [ ] Push notifications for plan expiry
 * [ ] QR-based member check-in system
 * [ ] AI-based personalized workout suggestions
+* [ ] Advanced product filtering (by category, price, brand)
+* [ ] Order tracking system for products
 
 ---
 
@@ -139,4 +144,9 @@ This project is licensed under the **MIT License**.
 **Manoj Neupane**
 
 * 🌐 [manoj-neupane.com.np](http://manoj-neupane.com.np)
-* 💼 LinkedIn: (https://www.linkedin.com/in/manoj-neupane-52162921a/))
+* 💼 LinkedIn: [linkedin.com/in/manoj-neupane](https://linkedin.com/in/manoj-neupane)
+
+```
+
+Do you want me to also **add a "Demo Section" with fake screenshots links** (like product page, trainer section, payment success) so your GitHub looks more professional?
+```
