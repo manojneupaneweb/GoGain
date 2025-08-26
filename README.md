@@ -1,8 +1,3 @@
-Got it 👍 You want a **README.md** file for your **GoGain project** (your gym membership/fitness system). I’ll draft it with all the sections like intro, features, tech stack, setup, etc.
-
-Here’s a clean version you can use directly as `README.md`:
-
-````markdown
 # 🏋️‍♂️ GoGain – Gym Membership Management System  
 
 GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, and member progress – all in one place.  
@@ -145,8 +140,3 @@ This project is licensed under the **MIT License**.
 
 * 🌐 [manoj-neupane.com.np](http://manoj-neupane.com.np)
 * 💼 LinkedIn: [linkedin.com/in/manoj-neupane](https://linkedin.com/in/manoj-neupane)
-
-```
-
-Would you like me to also **include screenshots/dummy image links** in the README (like demo UI sections: trainers, testimonials, payment page) so it looks professional on GitHub?
-```
