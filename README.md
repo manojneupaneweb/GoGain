@@ -139,4 +139,4 @@ This project is licensed under the **MIT License**.
 **Manoj Neupane**
 
 * 🌐 [manoj-neupane.com.np](http://manoj-neupane.com.np)
-* 💼 LinkedIn: [linkedin.com/in/manoj-neupane](https://linkedin.com/in/manoj-neupane)
+* 💼 LinkedIn: (https://www.linkedin.com/in/manoj-neupane-52162921a/))
