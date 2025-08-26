@@ -39,8 +39,8 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 ## 🛠️ Tech Stack  
 
 - **Frontend:** React.js, Tailwind CSS, Axios  
-- **Backend:** Node.js, Express.js / PHP (depending on deployment)  
-- **Database:** MySQL / MongoDB  
+- **Backend:**  PHP (vanilla)    
+- **Database:** MySQL  
 - **Payment Integration:** Khalti, eSewa  
 - **Authentication:** JWT (JSON Web Tokens)  
 - **Other Tools:** Git, GitHub, Postman  
