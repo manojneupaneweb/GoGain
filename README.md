@@ -144,9 +144,6 @@ This project is licensed under the **MIT License**.
 **Manoj Neupane**
 
 * 🌐 [manoj-neupane.com.np](http://manoj-neupane.com.np)
-* 💼 LinkedIn: [linkedin.com/in/manoj-neupane](https://linkedin.com/in/manoj-neupane)
+* 💼 LinkedIn: (https://www.linkedin.com/in/manoj-neupane-52162921a/)
 
-```
 
-Do you want me to also **add a "Demo Section" with fake screenshots links** (like product page, trainer section, payment success) so your GitHub looks more professional?
-```
