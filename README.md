@@ -102,9 +102,7 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 ```
 GoGain/
 │── frontend/       # React + Tailwind frontend
-│── backend/        # Node.js/Express or PHP backend
-│── database/       # SQL schema & migrations
-│── public/         # Assets (images, icons)
+│── backend/        # PHP backend
 │── README.md
 ```
 
