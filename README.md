@@ -50,7 +50,7 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
    ```bash
    git clone https://github.com/manojneupaneweb/gogain.git
    cd gogain
-````
+```
 
 2. Install dependencies
 
