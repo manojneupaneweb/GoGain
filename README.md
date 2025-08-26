@@ -1,6 +1,6 @@
 # 🏋️‍♂️ GoGain – Gym Membership Management System  
 
-GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, and member progress – all in one place.  
+GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, buy gym releted product and member progress – all in one place.  
 It is built with a **responsive, user-friendly UI** and follows **industry standards** in backend & frontend development.  
 
 ---
@@ -36,8 +36,8 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 ## 🛠️ Tech Stack  
 
 - **Frontend:** React.js, Tailwind CSS, Axios  
-- **Backend:** Node.js, Express.js / PHP (depending on deployment)  
-- **Database:** MySQL / MongoDB  
+- **Backend:** PHP 
+- **Database:** MySQL   
 - **Payment Integration:** Khalti, eSewa  
 - **Authentication:** JWT (JSON Web Tokens)  
 - **Other Tools:** Git, GitHub, Postman  
@@ -48,7 +48,7 @@ It is built with a **responsive, user-friendly UI** and follows **industry stand
 
 1. Clone the repository  
    ```bash
-   git clone https://github.com/your-username/gogain.git
+   git clone https://github.com/manojneupaneweb/gogain.git
    cd gogain
 ````
 
