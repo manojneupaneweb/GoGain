@@ -27,6 +27,19 @@ function registerExceptionHandler()
     });
 }
 
+function pageParams()
+{
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $limit = (int) ($_GET['limit'] ?? 20);
+    if ($limit < 1) {
+        $limit = 20;
+    }
+    if ($limit > 50) {
+        $limit = 50;
+    }
+    return [$page, $limit, ($page - 1) * $limit];
+}
+
 function h($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

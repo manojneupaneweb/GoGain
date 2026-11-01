@@ -115,16 +115,21 @@ class DashboardController
             $currentUserId = authUserId();
 
             // Get all users
-            $stmt = $pdo->prepare("SELECT id, fullName, email, avatar,  role FROM users");
-            $stmt->execute();
+            [$page, $limit, $offset] = pageParams();
+            $total = (int) $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+            $stmt = $pdo->query("SELECT id, fullName, email, avatar, role FROM users ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
+                'message' => 'Users loaded',
                 'data' => [
                     'users' => $users,
-                    'currentUserId' => $currentUserId
+                    'currentUserId' => $currentUserId,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
                 ]
             ]);
         } catch (PDOException $e) {
@@ -205,14 +210,23 @@ class DashboardController
 
         try {
             // Get all users with their information
-            $stmt = $pdo->prepare("SELECT fullName, email, phone,  avatar, created_at, last_login FROM users WHERE role = 'user'");
-            $stmt->execute();
+            [$page, $limit, $offset] = pageParams();
+            $count = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'user'");
+            $count->execute();
+            $total = (int) $count->fetchColumn();
+            $stmt = $pdo->query("SELECT fullName, email, phone, avatar, created_at, last_login FROM users WHERE role = 'user' ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'data' => $users
+                'message' => 'Customers loaded',
+                'data' => [
+                    'items' => $users,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                ],
             ]);
         } catch (PDOException $e) {
             error_log($e->getMessage());
@@ -317,14 +331,21 @@ class DashboardController
 
         try {
             // Get all users with their information
-            $stmt = $pdo->prepare("SELECT id, user_id, plan_name, start_date, expire_date, created_at FROM user_plans");
-            $stmt->execute();
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            [$page, $limit, $offset] = pageParams();
+            $total = (int) $pdo->query("SELECT COUNT(*) FROM user_plans")->fetchColumn();
+            $stmt = $pdo->query("SELECT id, user_id, plan_name, start_date, expire_date, created_at FROM user_plans ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
+            $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'data' => $users
+                'message' => 'Plans loaded',
+                'data' => [
+                    'items' => $plans,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                ],
             ]);
         } catch (PDOException $e) {
             error_log($e->getMessage());
@@ -354,7 +375,7 @@ class DashboardController
             $date   = date('Y-m-d');
 
             // First check if same user already has activity for today
-            $checkStmt = $pdo->prepare("SELECT id FROM gym_user_activity WHERE userId = :userId AND DATE(date) = :date");
+            $checkStmt = $pdo->prepare("SELECT id FROM gym_user_activity WHERE user_id = :userId AND activity_date = :date");
             $checkStmt->execute([
                 ':userId' => $userId,
                 ':date'   => $date,
@@ -364,19 +385,19 @@ class DashboardController
             if ($existing) {
                 // Update if already exists
                 $stmt = $pdo->prepare("
-                UPDATE gym_user_activity 
-                SET muscleGroup = :muscleGroup,
+                UPDATE gym_user_activity
+                SET muscle_group = :muscleGroup,
                     exercise = :exercise,
                     sets = :sets,
                     reps = :reps,
                     weight = :weight,
-                    cardioMinutes = :cardioMinutes,
+                    cardio_minutes = :cardioMinutes,
                     notes = :notes,
-                    strengthProgress = :strengthProgress,
-                    enduranceProgress = :enduranceProgress,
-                    bodyFat = :bodyFat,
-                    muscleMass = :muscleMass,
-                    trainer = :trainer,
+                    strength_progress = :strengthProgress,
+                    endurance_progress = :enduranceProgress,
+                    body_fat = :bodyFat,
+                    muscle_mass = :muscleMass,
+                    trainer_id = :trainer,
                     focus = :focus
                 WHERE id = :id
             ");
@@ -403,10 +424,10 @@ class DashboardController
                 // Insert if not exists
                 $stmt = $pdo->prepare("
                 INSERT INTO gym_user_activity (
-                    userId, date, muscleGroup, exercise, sets, reps, weight, cardioMinutes, notes, 
-                    strengthProgress, enduranceProgress, bodyFat, muscleMass, trainer, focus, created_at
+                    user_id, activity_date, muscle_group, exercise, sets, reps, weight, cardio_minutes, notes,
+                    strength_progress, endurance_progress, body_fat, muscle_mass, trainer_id, focus, created_at
                 ) VALUES (
-                    :userId, :date, :muscleGroup, :exercise, :sets, :reps, :weight, :cardioMinutes, :notes, 
+                    :userId, :date, :muscleGroup, :exercise, :sets, :reps, :weight, :cardioMinutes, :notes,
                     :strengthProgress, :enduranceProgress, :bodyFat, :muscleMass, :trainer, :focus, NOW()
                 )
             ");
@@ -455,27 +476,27 @@ class DashboardController
             $stmt = $pdo->prepare("
             SELECT 
                 a.id,
-                a.date,
-                a.muscleGroup,
+                a.activity_date AS date,
+                a.muscle_group AS muscleGroup,
                 a.exercise,
                 a.sets,
                 a.reps,
                 a.weight,
-                a.cardioMinutes,
+                a.cardio_minutes AS cardioMinutes,
                 a.notes,
-                a.strengthProgress,
-                a.enduranceProgress,
-                a.bodyFat,
-                a.muscleMass,
-                a.trainer AS trainerId,
+                a.strength_progress AS strengthProgress,
+                a.endurance_progress AS enduranceProgress,
+                a.body_fat AS bodyFat,
+                a.muscle_mass AS muscleMass,
+                a.trainer_id AS trainerId,
                 a.focus,
                 t.avatar AS trainerAvatar,
                 t.fullName AS trainerFullName,
                 t.email AS trainerEmail,
                 t.phone AS trainerPhone
             FROM gym_user_activity a
-            LEFT JOIN users t ON a.trainer = t.id
-            WHERE a.userId = :userId
+            LEFT JOIN users t ON a.trainer_id = t.id
+            WHERE a.user_id = :userId
         ");
 
             $stmt->execute(['userId' => $userId]);
@@ -511,41 +532,44 @@ class DashboardController
             }
 
             // get query params
+            [$page, $limit, $offset] = pageParams();
             $status = $_GET['status'] ?? null;
-
+            $where = '';
+            $params = [];
             if ($status) {
-                $stmt = $pdo->prepare("
-                    SELECT 
-                        o.id, o.order_status, o.quantity, o.total_price,o.delivery_address,  o.created_at, o.reason,
-                        u.id AS user_id, u.fullName, u.avatar, u.email, u.phone,
-                        p.id AS product_id, p.name AS product_name, p.image AS product_image, p.price AS product_price
-                    FROM orders o
-                    JOIN users u ON o.user_id = u.id
-                    JOIN products p ON o.product_id = p.id
-                    WHERE o.order_status = ?
-                ");
-                $stmt->execute([$status]);
-            } else {
-                $stmt = $pdo->prepare("
-                    SELECT 
-                        o.id, o.order_status, o.created_at, o.reason,
-                        u.id AS user_id, u.fullName, u.avatar, u.email, u.phone,
-                        p.id AS product_id, p.name AS product_name, p.image AS product_image, p.price AS product_price
-                    FROM orders o
-                    JOIN users u ON o.user_id = u.id
-                    JOIN products p ON o.product_id = p.id
-                ");
-                $stmt->execute();
+                $where = 'WHERE o.order_status = ?';
+                $params[] = $status;
             }
 
+            $count = $pdo->prepare("SELECT COUNT(*) FROM orders o $where");
+            $count->execute($params);
+            $total = (int) $count->fetchColumn();
+
+            $stmt = $pdo->prepare("
+                SELECT
+                    o.id, o.order_status, o.quantity, o.total_price, o.delivery_address, o.created_at, o.reason,
+                    u.id AS user_id, u.fullName, u.avatar, u.email, u.phone,
+                    p.id AS product_id, p.name AS product_name, p.image AS product_image, p.price AS product_price
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                JOIN products p ON o.product_id = p.id
+                $where
+                ORDER BY o.created_at DESC
+                LIMIT {$limit} OFFSET {$offset}
+            ");
+            $stmt->execute($params);
             $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'message' => 'orders fetched successfully!',
-                'data' => $orders,
-                'status' => $status
+                'data' => [
+                    'items' => $orders,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                ],
             ]);
         } catch (PDOException $e) {
             error_log($e->getMessage());
@@ -583,32 +607,32 @@ class DashboardController
             $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 4. Gym user daily activity summary (last 7 days)
-            $stmt = $pdo->query("SELECT DATE(date) AS activity_date, 
-                                     COUNT(*) AS total_exercises, 
-                                     SUM(cardioMinutes) AS total_cardio_minutes
+            $stmt = $pdo->query("SELECT activity_date,
+                                     COUNT(*) AS total_exercises,
+                                     SUM(cardio_minutes) AS total_cardio_minutes
                               FROM gym_user_activity
-                              WHERE DATE(date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                              GROUP BY DATE(date)
+                              WHERE activity_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                              GROUP BY activity_date
                               ORDER BY activity_date DESC");
             $dailyActivity = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 5. Muscle group summary
-            $stmt = $pdo->query("SELECT muscleGroup, COUNT(*) AS exercise_count
+            $stmt = $pdo->query("SELECT muscle_group AS muscleGroup, COUNT(*) AS exercise_count
                               FROM gym_user_activity
-                              GROUP BY muscleGroup
+                              GROUP BY muscle_group
                               ORDER BY exercise_count DESC");
             $muscleGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 6. Strength & endurance progress (average)
-            $stmt = $pdo->query("SELECT AVG(strengthProgress) AS avg_strength, 
-                                     AVG(enduranceProgress) AS avg_endurance
+            $stmt = $pdo->query("SELECT AVG(strength_progress) AS avg_strength,
+                                     AVG(endurance_progress) AS avg_endurance
                               FROM gym_user_activity");
             $progress = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // 7. Top active users (by number of activities in last 7 days)
             $stmt = $pdo->query("SELECT u.id, u.fullName, COUNT(a.id) AS activity_count
                               FROM users u
-                              JOIN gym_user_activity a ON u.id = a.userId
+                              JOIN gym_user_activity a ON u.id = a.user_id
                               WHERE DATE(a.date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                               GROUP BY u.id
                               ORDER BY activity_count DESC

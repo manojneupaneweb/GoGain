@@ -85,7 +85,7 @@ class ProductController
 
             // Convert specs to JSON
             $specsJSON = json_encode($specifications);
-            $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
+            $id = Uuid::uuid4()->toString();
 
             // Insert into DB
             $stmt = $this->pdo->prepare("
@@ -132,15 +132,21 @@ class ProductController
         header('Content-Type: application/json');
 
         try {
-            $stmt = $this->pdo->query("SELECT * FROM products");
-            $products = $stmt->fetchAll(PDO::FETCH_CLASS, 'ProductModel');
+            [$page, $limit, $offset] = pageParams();
+            $total = (int) $this->pdo->query("SELECT COUNT(*) FROM products")->fetchColumn();
+            $stmt = $this->pdo->query("SELECT id, name, description, price, category, image, stock, rating, reviews, discount, specifications, warranty, created_at, updated_at FROM products ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            if (empty($products)) {
-                echo json_encode(['success' => true, 'message' => 'No products found']);
-                return;
-            }
-
-            echo json_encode(['success' => true, 'data' => $products]);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Products loaded',
+                'data' => [
+                    'items' => $products,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                ],
+            ]);
         } catch (Exception $e) {
             error_log($e->getMessage());
             http_response_code(500);

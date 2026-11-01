@@ -14,8 +14,8 @@ class PaymentController
         $this->pdo = $pdo;
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS payments (
-                id VARCHAR(40) PRIMARY KEY,
-                user_id VARCHAR(40) NOT NULL,
+                id CHAR(36) PRIMARY KEY,
+                user_id CHAR(36) NOT NULL,
                 provider VARCHAR(20) NOT NULL,
                 purpose VARCHAR(20) NOT NULL,
                 reference VARCHAR(80) NULL,
@@ -250,7 +250,7 @@ class PaymentController
             return null;
         }
 
-        $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
+        $id = Uuid::uuid4()->toString();
         $insert = $this->pdo->prepare("
             INSERT INTO payments (id, user_id, provider, purpose, amount_paisa, plan_key, status)
             VALUES (?, ?, ?, ?, ?, ?, 'pending')

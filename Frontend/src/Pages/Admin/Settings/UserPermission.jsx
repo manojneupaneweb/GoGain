@@ -45,6 +45,7 @@ function UserPermission() {
     const fetchUsers = async () => {
       try {
         const response = await api.get('/api/v1/admin/getallusers', {
+          params: { limit: 50 },
           headers: {
             'Content-Type': 'application/json',
           },

@@ -59,6 +59,7 @@ const TrainerDashboard = () => {
     try {
       setIsLoading(true);
       const res = await api.get("/api/v1/admin/getallusersfortrainer", {
+        params: { limit: 50 },
       });
       const filtered = res.data.data.users.filter(
         (u) =>

@@ -23,12 +23,13 @@ function AllProduct() {
       try {
 
         const response = await api.get("/api/v1/product/getallproduct", {
+          params: { limit: 50 },
           headers: {
           },
           withCredentials: true
         });
 
-        setProducts(response.data.data || []);
+        setProducts(response.data.data?.items || []);
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to fetch products');
         toast.error(err.response?.data?.message || err.message || 'Failed to fetch products');

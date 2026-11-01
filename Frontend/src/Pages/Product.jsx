@@ -55,9 +55,9 @@ function ProductListing() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/api/v1/product/getallproduct");
+        const response = await api.get("/api/v1/product/getallproduct", { params: { limit: 50 } });
 
-        const productsData = response.data.data;
+        const productsData = response.data.data?.items || [];
         setProducts(productsData);
 
         // Extract unique categories

@@ -18,15 +18,16 @@ const Customers = () => {
     setError(null);
     try {
       const response = await api.get('/api/v1/admin/getalluserinformation', {
+        params: { page, limit },
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
 
-      if (response.data && Array.isArray(response.data.data)) {
-        setCustomers(response.data.data);
-        setTotalPages(Math.ceil((response.data.total || 1) / limit));
+      const payload = response.data?.data;
+      if (payload && Array.isArray(payload.items)) {
+        setCustomers(payload.items);
+        setTotalPages(Math.ceil((payload.total || 1) / limit));
       } else {
         setCustomers([]);
         toast.info("No customers data available");

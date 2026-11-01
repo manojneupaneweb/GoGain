@@ -55,7 +55,7 @@ class CartController
 
 
             // Insert new item
-            $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
+            $id = Uuid::uuid4()->toString();
             $insert = $pdo->prepare("INSERT INTO cart (id, user_id, product_id,  quantity, price) VALUES (?, ?, ?,?, ?)");
             $insert->execute([$id, $user_id,  $product_id, $quantity, $price,]);
 
@@ -171,7 +171,7 @@ class CartController
             global $pdo;
 
             // Update quantity in cart
-            $stmt = $pdo->prepare("UPDATE cart SET quantity = ?, update_at = NOW() WHERE user_id = ? AND product_id = ?");
+            $stmt = $pdo->prepare("UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND product_id = ?");
             $stmt->execute([$quantity, $user_id, $productId]);
 
             if ($stmt->rowCount() > 0) {
@@ -463,7 +463,7 @@ class PlanController
         }
 
         $newExpireDate = date('Y-m-d', strtotime("+{$days} days"));
-        $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
+        $id = \Ramsey\Uuid\Uuid::uuid4()->toString();
         $insert = $this->pdo->prepare("
             INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)

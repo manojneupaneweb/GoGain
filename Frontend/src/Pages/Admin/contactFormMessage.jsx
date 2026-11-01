@@ -14,9 +14,10 @@ const ContactFormMessage = () => {
         const fetchMessages = async () => {
             try {
                 const response = await api.get('/api/v1/user/getcontactform', {
+                    params: { limit: 50 },
                     withCredentials: true
                 });
-                setMessages(response.data.data);
+                setMessages(response.data.data?.items || []);
             } catch (err) {
                 console.error('Failed to fetch messages:', err);
             }

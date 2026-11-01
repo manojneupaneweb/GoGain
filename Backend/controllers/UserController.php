@@ -244,7 +244,7 @@ class UserController
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             // Insert user
-            $id = substr(str_replace('-', '', Uuid::uuid4()->toString()), 0, 30);
+            $id = Uuid::uuid4()->toString();
 
             $stmt = $this->pdo->prepare("
             INSERT INTO users 
@@ -594,10 +594,6 @@ class UserController
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
-                // Optional: update last_login
-                $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-                $updateStmt->execute([$userId]);
-
                 echo json_encode(['success' => true, 'message' => 'User loaded', 'data' => ['user' => $user]]);
             } else {
                 http_response_code(404);
@@ -670,10 +666,6 @@ class UserController
             $stmtPlans->execute([$userId]);
             $plans = $stmtPlans->fetchAll(PDO::FETCH_ASSOC);
 
-            // Optional: update last_login
-            $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-            $updateStmt->execute([$userId]);
-
             // Send full response
             echo json_encode([
                 'success' => true,
@@ -720,7 +712,7 @@ class UserController
         p.price AS product_price,
         p.image AS product_image
     FROM orders o
-    LEFT JOIN products p ON TRIM(o.product_id) = TRIM(p.id)
+    LEFT JOIN products p ON o.product_id = p.id
     WHERE o.user_id = ?
 ");
 
@@ -827,12 +819,20 @@ class UserController
         }
 
         try {
-            $stmt = $this->pdo->query("SELECT * FROM contact_messages ORDER BY created_at DESC");
+            [$page, $limit, $offset] = pageParams();
+            $total = (int) $this->pdo->query("SELECT COUNT(*) FROM contact_messages")->fetchColumn();
+            $stmt = $this->pdo->query("SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
                 'success' => true,
-                'data' => $messages
+                'message' => 'Messages loaded',
+                'data' => [
+                    'items' => $messages,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                ],
             ]);
         } catch (Exception $e) {
             error_log($e->getMessage());

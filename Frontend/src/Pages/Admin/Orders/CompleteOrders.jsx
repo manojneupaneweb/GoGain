@@ -31,8 +31,8 @@ function CompleteOrders() {
         }
       });
 
-      if (response.data && Array.isArray(response.data.data)) {
-        setOrders(response.data.data);
+      if (response.data?.data && Array.isArray(response.data.data.items)) {
+        setOrders(response.data.data.items);
       } else {
         setOrders([]);
         toast.info("No orders data available");

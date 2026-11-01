@@ -490,11 +490,12 @@ const PendingOrders = () => {
         }
       });
 
-      if (response.data && Array.isArray(response.data.data)) {
-        setOrders(response.data.data);
-        setTotalPages(Math.ceil((response.data.total || 1) / ITEMS_PER_PAGE));
+      const payload = response.data?.data;
+      if (payload && Array.isArray(payload.items)) {
+        setOrders(payload.items);
+        setTotalPages(Math.ceil((payload.total || 1) / ITEMS_PER_PAGE));
 
-        if (response.data.data.length === 0) {
+        if (payload.items.length === 0) {
           toast.info("No orders found");
         }
       } else {
