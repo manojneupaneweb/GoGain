@@ -77,7 +77,7 @@ function AddProduct() {
     formData.append('specifications', JSON.stringify(productData.specifications));
 
     try {
-      const response = await api.post('/api/v1/product/addproduct', formData, {
+      await api.post('/api/v1/product/addproduct', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

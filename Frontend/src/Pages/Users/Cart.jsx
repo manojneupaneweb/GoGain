@@ -4,14 +4,12 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaTrash, FaPlus, FaMinus, FaShoppingCart, FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { Link, redirect } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Loading from '../../Component/Loading';
 import { initiateEsewaPayment, initiateKhaltiPayment } from '../../utils/payment';
 import { useCart } from '../../utils/CartContext';
-import { useNavigate } from 'react-router-dom';
 
 function Cart() {
-    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [subtotal, setSubtotal] = useState(0);
     const [shipping, setShipping] = useState(0);

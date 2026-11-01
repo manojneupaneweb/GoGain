@@ -563,7 +563,7 @@ const OrderList = ({ status }) => {
     setProcessing(true);
     
     try {
-      const response = await api.post(
+      await api.post(
         '/api/v1/admin/changestatus',
         {
           orderId: currentOrder,
