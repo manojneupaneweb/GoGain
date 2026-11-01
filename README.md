@@ -1,147 +1,128 @@
-# 🏋️‍♂️ GoGain – Gym Membership Management System  
+# GoGain
 
-GoGain is a modern **Gym & Fitness Management System** that helps gyms and fitness centers manage memberships, trainers, workout plans, payments, member progress, and even sell gym-related products – all in one place.  
-It is built with a **responsive, user-friendly UI** and follows **industry standards** in backend & frontend development.  
-
----
-
-## 🚀 Features  
-
-### 👥 User Features
-- Register & Login (with secure authentication)  
-- Browse gym plans & pricing  
-- Online membership purchase with **Khalti/eSewa integration**  
-- View and manage personal profile  
-- Track membership status and expiry date  
-- Access workout plans & trainer info  
-- Buy **gym-related products** (supplements, equipment, accessories)  
-- See testimonials and transformation stories  
-
-### 🏢 Admin Features
-- Dashboard overview (members, trainers, payments, plans, products)  
-- Add/Edit/Delete gym plans (e.g., Basic, Premium, Yearly)  
-- Manage trainers (expertise, availability, profiles)  
-- Manage members & their subscriptions  
-- Manage **products** (add, update, delete, inventory tracking)  
-- Track payments & invoices  
-- Automated membership expiry updates  
-- Analytics & reports  
-
-### 📱 UI Features
-- Fully **responsive design** with **Tailwind CSS**  
-- Smooth animations (Framer Motion)  
-- Carousel for trainers & testimonials  
-- Dark/Light mode support  
-- Clean shopping & checkout experience  
-
----
-
-## 🛠️ Tech Stack  
-
-- **Frontend:** React.js, Tailwind CSS, Axios  
-- **Backend:**  PHP (vanilla)    
-- **Database:** MySQL  
-- **Payment Integration:** Khalti, eSewa  
-- **Authentication:** JWT (JSON Web Tokens)  
-- **Other Tools:** Git, GitHub, Postman  
-
----
-
-## ⚙️ Installation & Setup  
-
-1. Clone the repository  
-   ```bash
-   git clone https://github.com/manojneupaneweb/gogain.git
-   cd gogain
-```
-
-2. Install dependencies
-
-   ```bash
-   cd frontend
-   npm install
-   cd ../backend
-   npm install
-   ```
-
-3. Create a `.env` file in backend and configure:
-
-   ```env
-   PORT=8000
-   DB_USER=root
-   DB_PASS=yourpassword
-   DB_NAME=gogain
-   JWT_SECRET=your_jwt_secret
-   KHALTI_SECRET=your_khalti_secret
-   ```
-
-4. Start backend server
-
-   ```bash
-   cd backend
-   npm run dev
-   ```
-
-5. Start frontend
-
-   ```bash
-   cd frontend
-   npm start
-   ```
-
-6. Visit the app on:
-
-   ```
-   http://localhost:3000
-   ```
-
----
-
-## 📂 Project Structure
+Gym shop and membership app. The UI is React and Vite. The API is PHP with MySQL.
 
 ```
-GoGain/
-│── frontend/       # React + Tailwind frontend
-│── backend/        # PHP backend
-│── README.md
+Backend/     PHP API (Composer)
+Frontend/    React app (Vite)
+database/    schema.sql and seed.sql
 ```
 
----
+## Run it locally
 
-## 📌 Roadmap
+PHP 8.3, Composer, Node 22, and MySQL 8.
 
-* [ ] Add diet/nutrition plan module
-* [ ] Mobile app (React Native)
-* [ ] Push notifications for plan expiry
-* [ ] QR-based member check-in system
-* [ ] AI-based personalized workout suggestions
-* [ ] Advanced product filtering (by category, price, brand)
-* [ ] Order tracking system for products
+```bash
+cp Backend/.env.example Backend/.env
+cp Frontend/.env.example Frontend/.env
+```
 
----
+Fill `Backend/.env` with your database and the payment, mail, Cloudinary, and token secrets. Set both `CORS_ORIGIN` and `APP_ORIGIN` to `http://localhost:5173`. In `Frontend/.env`, set `VITE_API_URL=http://localhost:5173` so the browser stays on the Vite origin and the session cookies are sent.
 
-## 🤝 Contributing
+```bash
+mysql -u root -p < database/schema.sql
+mysql -u root -p < database/seed.sql
 
-Contributions are welcome!
+cd Backend && composer install
+php -S localhost:8000 index.php
 
-1. Fork the repo
-2. Create a feature branch (`feature/new-feature`)
-3. Commit changes & push
-4. Open a Pull Request
+cd Frontend && npm install
+npm run dev
+```
 
----
+The API is on port 8000. The UI is on port 5173. Vite proxies `/api` to `http://localhost:8000`.
 
-## 📜 License
+Seed accounts use the password `password`:
 
-This project is licensed under the **MIT License**.
+- admin@gogain.test
+- trainer@gogain.test
+- member@gogain.test
 
----
+Docker does the same three processes:
 
-## 👨‍💻 Author
+```bash
+docker compose up --build
+```
 
-**Manoj Neupane**
+The Compose file sets a local database password of `gogain`. Change that before using it anywhere else.
 
-* 🌐 [manoj-neupane.com.np](http://manoj-neupane.com.np)
-* 💼 LinkedIn: (https://www.linkedin.com/in/manoj-neupane-52162921a/)
+## Tests
 
+```bash
+cd Backend && composer test
+cd Frontend && npm test
+cd Frontend && npm run lint && npm run build
+```
 
+## What the app does
+
+Members register with an email code, log in, buy a membership plan, and buy products from the catalog. Trainers record a member's daily gym activity. Admins manage products, order status, roles, customers, and contact messages.
+
+Plans and prices are defined in `Backend/utils/plans.php`: Basic 2000 / 30 days, Standard 9000 / 90 days, Premium 16000 / 180 days, Elite 30000 / 365 days. Product prices come from the `products` table. Shipping is 0 when the cart is over 100, otherwise 10.
+
+## API
+
+JSON shape is `{ "success", "message", "data" }`. Lists use `page` and `limit` (max 50) and return `data.items` or `data.users`, plus `page`, `limit`, and `total`.
+
+Unsafe methods need the `X-CSRF-Token` header. The frontend reads it from `GET /api/v1/user/csrf`.
+
+| Method | Path | Who |
+| --- | --- | --- |
+| POST | /api/v1/user/register | public |
+| POST | /api/v1/user/login | public |
+| POST | /api/v1/user/send-otp | public |
+| POST | /api/v1/user/verify-otp | public |
+| POST | /api/v1/user/forgetpassword | public |
+| POST | /api/v1/user/contactform | public |
+| GET | /api/v1/user/csrf | public |
+| POST | /api/v1/user/refreshtoken | cookie |
+| POST | /api/v1/user/logout | signed in |
+| GET | /api/v1/user/getuser | signed in |
+| GET | /api/v1/user/getuserprofile | signed in |
+| GET | /api/v1/user/myorders | signed in |
+| GET | /api/v1/user/verify-user | signed in |
+| POST | /api/v1/user/change-password | signed in |
+| POST | /api/v1/user/deliveryaddress | signed in |
+| GET | /api/v1/user/getcontactform | admin |
+| GET | /api/v1/product/getallproduct | public |
+| GET | /api/v1/product/{id} | public |
+| POST | /api/v1/product/addproduct | admin |
+| POST | /api/v1/product/updateproduct/{id} | admin |
+| DELETE | /api/v1/product/deleteproduct/{id} | admin |
+| POST | /api/v1/cart/addtocart | signed in |
+| GET | /api/v1/cart/getcartitem | signed in |
+| PUT | /api/v1/cart/cart/{productId} | signed in |
+| DELETE | /api/v1/cart/delete/{productId} | signed in |
+| POST | /api/v1/cart/createorder | signed in, rejected until payment is verified |
+| POST | /api/v1/cart/createplan | signed in, rejected until payment is verified |
+| POST | /api/v1/payment/khalti/initiate | signed in |
+| POST | /api/v1/payment/khalti/verify | signed in |
+| POST | /api/v1/payment/esewa/initiate | signed in |
+| POST | /api/v1/payment/esewa/verify | signed in |
+| GET | /api/v1/admin/dashboard | admin |
+| GET | /api/v1/admin/getallorders | admin |
+| POST | /api/v1/admin/changestatus | admin |
+| GET | /api/v1/admin/getallusers | admin |
+| POST | /api/v1/admin/changerole | admin |
+| GET | /api/v1/admin/getalluserinformation | admin |
+| GET | /api/v1/admin/getalluserplans | admin |
+| GET | /api/v1/admin/reportdata | admin |
+| POST | /api/v1/admin/change-password | admin |
+| GET | /api/v1/admin/getallusersfortrainer | trainer |
+| POST | /api/v1/admin/daily-activity | trainer |
+| GET | /api/v1/admin/getuseractivity | signed in |
+
+## Security that the code actually enforces
+
+- Access and refresh tokens are `httpOnly` cookies. The refresh token is stored as a hash, checked on refresh, and rotated. Logout clears the hash.
+- A readable `csrf_token` cookie must match `X-CSRF-Token` on unsafe requests.
+- The role is loaded from the `users` table on each request. Allowed role changes are `user`, `trainer`, and `admin`.
+- Email codes and the proof tokens that follow them are hashed, single-use, and short-lived. Reset and OTP responses do not say whether the email exists.
+- Khalti and eSewa amounts are computed on the server. An order or plan is marked paid only after the provider lookup matches the stored payment. Confirmation is idempotent.
+- Login, OTP, reset, and the contact form are rate limited from files in the system temp directory.
+- Product uploads accept jpeg, png, or webp, up to 2MB, and use a random Cloudinary id.
+- CORS sends credentials only when the request origin is `CORS_ORIGIN`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
