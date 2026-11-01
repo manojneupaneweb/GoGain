@@ -1,17 +1,13 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Cloudinary\Cloudinary;
-use Dotenv\Dotenv;
 
 $cloudinary = new Cloudinary([
     'cloud' => [
-        'cloud_name' => $_ENV['CLOUDENIRAY_cloud_name'],
-        'api_key'    => $_ENV['CLOUDENIRAY_api_key'],
-        'api_secret' => $_ENV['CLOUDENIRAY_api_secret'],
+        'cloud_name' => $_ENV['CLOUDINARY_CLOUD_NAME'],
+        'api_key'    => $_ENV['CLOUDINARY_API_KEY'],
+        'api_secret' => $_ENV['CLOUDINARY_API_SECRET'],
     ],
 ]);
 

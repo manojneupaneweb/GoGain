@@ -1,12 +1,7 @@
 <?php
-require_once __DIR__ . '/../models/user.model.php';
 require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
 require_once __DIR__ . '/../vendor/autoload.php';
-require 'vendor/autoload.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
 
 use Ramsey\Uuid\Uuid;
 
