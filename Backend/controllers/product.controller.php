@@ -121,8 +121,9 @@ class ProductController
                 ]
             ]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => 'Server error', 'message' => 'Server error']);
         }
     }
 
@@ -141,8 +142,9 @@ class ProductController
 
             echo json_encode(['success' => true, 'data' => $products]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => 'Server error', 'message' => 'Server error']);
         }
     }
 
@@ -175,8 +177,9 @@ class ProductController
 
             echo json_encode(['success' => true, 'data' => $product]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Server error', 'error' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => 'Server error', 'message' => 'Server error']);
         }
     }
 
@@ -200,10 +203,10 @@ class ProductController
                 ]);
             }
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             echo json_encode([
                 "success" => false,
                 "message" => "Database error",
-                "error" => $e->getMessage()
             ]);
         }
     }

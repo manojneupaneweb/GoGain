@@ -65,8 +65,9 @@ class CartController
             ]);
             exit;
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Server error', 'details' => $e->getMessage()]);
+            echo json_encode(['status' => 'error', 'message' => 'Server error']);
         }
     }
 
@@ -121,10 +122,10 @@ class CartController
             ]);
             exit;
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -183,11 +184,11 @@ class CartController
                 ]);
             }
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error occurred',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -243,11 +244,11 @@ class CartController
             }
             exit;
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error.',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -397,9 +398,10 @@ class OrderController
                 'orders'  => $createdOrders
             ];
         } catch (Exception $e) {
+            error_log($e->getMessage());
             return [
                 'success' => false,
-                'error'   => $e->getMessage()
+                'message' => 'Server error'
             ];
         }
     }
@@ -592,11 +594,11 @@ class PlanController
                 return;
             }
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }

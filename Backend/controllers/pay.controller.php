@@ -48,12 +48,13 @@ class PaymentController
             curl_close($curl);
 
             if ($err) {
-                echo json_encode(["status" => "error", "message" => $err]);
+                error_log($err);
+                echo json_encode(["status" => "error", "message" => "Payment provider error"]);
             } else {
                 echo $response;
             }
         } catch (\Throwable $th) {
-            echo json_encode(["status" => "error", "message" => $th->getMessage()]);
+            echo json_encode(["status" => "error", "message" => "Server error"]);
         }
     }
     public function verifyPayment()
@@ -86,7 +87,8 @@ class PaymentController
             curl_close($curl);
 
             if ($err) {
-                echo json_encode(["success" => false, "message" => $err]);
+                error_log($err);
+                echo json_encode(["success" => false, "message" => "Payment provider error"]);
                 return;
             }
 
@@ -106,7 +108,7 @@ class PaymentController
                 ]);
             }
         } catch (\Throwable $th) {
-            echo json_encode(["success" => false, "message" => $th->getMessage()]);
+            echo json_encode(["success" => false, "message" => "Server error"]);
         }
     }
 }

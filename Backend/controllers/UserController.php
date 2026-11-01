@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
+require_once __DIR__ . '/../utils/otp.php';
+require_once __DIR__ . '/../utils/cookies.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Ramsey\Uuid\Uuid;
@@ -56,11 +58,21 @@ class UserController
             return;
         }
 
-        session_start();
+        $purpose = ($input['purpose'] ?? 'register') === 'reset' ? 'reset' : 'register';
 
-        $otp = random_int(100000, 999999);
-        $_SESSION['otp'][$email] = $otp;
-        $_SESSION['otp_time'][$email] = time();
+        if ($purpose === 'reset') {
+            $exists = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $exists->execute([$email]);
+            if (!$exists->fetch()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'If an account exists for that email, a code has been sent.'
+                ]);
+                return;
+            }
+        }
+
+        $otp = issueOtp($this->pdo, $email, $purpose);
 
         $subject = "Your GoGain OTP Verification Code";
 
@@ -93,17 +105,19 @@ class UserController
         $result = sendMail($email, $subject, $body); // Assume sendMail returns ['success' => bool, 'message' => string]
 
         if ($result['success']) {
-            http_response_code(200);
+            $message = $purpose === 'reset'
+                ? 'If an account exists for that email, a code has been sent.'
+                : 'OTP sent to your email successfully.';
             echo json_encode([
                 'success' => true,
-                'message' => 'OTP sent to your email successfully.'
+                'message' => $message
             ]);
         } else {
+            error_log($result['message'] ?? 'OTP mail failed');
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Failed to send OTP.',
-                'error' => $result['message'] ?? 'Unknown error'
+                'message' => 'Failed to send OTP.'
             ]);
         }
     }
@@ -111,7 +125,6 @@ class UserController
     public function verifyOtp()
     {
         header('Content-Type: application/json');
-        session_start();
 
         // Only allow POST requests
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -128,54 +141,29 @@ class UserController
             }
 
             $email = filter_var(trim($data['email'] ?? ''), FILTER_VALIDATE_EMAIL);
-            $otp = trim($data['otp'] ?? '');
+            $otp = trim((string) ($data['otp'] ?? ''));
+            $purpose = ($data['purpose'] ?? 'register') === 'reset' ? 'reset' : 'register';
 
-            // Validate input
-            if (!$email || empty($otp)) {
+            if (!$email || $otp === '') {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Valid email and OTP are required.']);
                 exit;
             }
 
-            if ($otp === '625612') {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'OTP verified successfully (master OTP).',
-                    'data' => ['email' => $email]
-                ]);
-                exit;
-            }
-
-            // Check if OTP and timestamp exist for this email
-            if (!isset($_SESSION['otp'][$email]) || !isset($_SESSION['otp_time'][$email])) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'OTP not found or already expired.']);
-                exit;
-            }
-
-            // Check if OTP expired (5 minutes = 300 seconds)
-            if (time() - $_SESSION['otp_time'][$email] > 300) {
-                unset($_SESSION['otp'][$email], $_SESSION['otp_time'][$email]);
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'OTP expired. Please request a new one.']);
-                exit;
-            }
-
-            // Verify OTP (use strict comparison)
-            if ($_SESSION['otp'][$email] === $otp) {
-                // Clear the OTP after successful verification
-                unset($_SESSION['otp'][$email], $_SESSION['otp_time'][$email]);
-
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'OTP verified successfully.',
-                    'data' => ['email' => $email]
-                ]);
-            } else {
+            $proof = verifyOtpCode($this->pdo, $email, $purpose, $otp);
+            if (!$proof) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Invalid OTP.']);
+                exit;
             }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'OTP verified successfully.',
+                'data' => ['email' => $email, 'token' => $proof]
+            ]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'An error occurred during OTP verification.']);
         }
@@ -214,6 +202,11 @@ class UserController
             if (empty($avatarFile) || empty($avatarFile['tmp_name']))
                 $missingFields[] = 'avatar';
 
+            $verificationToken = trim((string) ($_POST['verification_token'] ?? ''));
+            if ($verificationToken === '') {
+                $missingFields[] = 'verification_token';
+            }
+
             if (!empty($missingFields)) {
                 http_response_code(400);
                 echo json_encode([
@@ -223,13 +216,21 @@ class UserController
                 exit;
             }
 
-            // Check if email already exists
             $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 http_response_code(409);
                 echo json_encode(['success' => false, 'message' => 'Email already registered.']);
                 return;
+            }
+
+            if (!$email || !consumeProof($this->pdo, $email, 'register', $verificationToken)) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email verification is required.'
+                ]);
+                exit;
             }
 
             // Upload avatar
@@ -305,15 +306,14 @@ class UserController
                 echo json_encode([
                     'success' => false,
                     'message' => 'Registration failed.',
-                    'errorInfo' => $stmt->errorInfo()
                 ]);
             }
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'An error occurred during registration.',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -345,7 +345,7 @@ class UserController
         $password = $data['password'];
 
         // Fetch user
-        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt = $this->pdo->prepare("SELECT id, fullName, email, password, avatar, role, last_login FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -381,11 +381,11 @@ class UserController
         ];
         $refreshToken = JWT::encode($refreshPayload, $_ENV['REFRESH_TOKEN_SECRET'], 'HS256');
 
-        // Save refresh token
         $stmt = $this->pdo->prepare("UPDATE users SET refresh_token = ? WHERE id = ?");
-        $stmt->execute([$refreshToken, $user['id']]);
+        $stmt->execute([password_hash($refreshToken, PASSWORD_DEFAULT), $user['id']]);
 
-        // Response
+        setAuthCookies($accessToken, $accessTtl, $refreshToken, $refreshTtl);
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
@@ -396,63 +396,80 @@ class UserController
                 'email' => $user['email'],
                 'avatar' => $user['avatar'],
                 'last_login' => $user['last_login'],
-                'role' => $user['role'],
-                'location' => $user['location'] ?? null
-            ],
-            'token' => $accessToken,
-            'refresh_token' => $refreshToken
+                'role' => $user['role']
+            ]
         ]);
     }
 
-
     public function refreshToken()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $refreshToken = $data['refresh_token'];
-
-        $secretKey = $_ENV['REFRESH_TOKEN_SECRET'];
+        header('Content-Type: application/json');
+        $refreshToken = $_COOKIE['refresh_token'] ?? '';
+        if ($refreshToken === '') {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Invalid refresh token']);
+            return;
+        }
 
         try {
-            $decoded = JWT::decode($refreshToken, new Key($secretKey, 'HS256'));
+            $decoded = JWT::decode($refreshToken, new Key($_ENV['REFRESH_TOKEN_SECRET'], 'HS256'));
 
-            // Check if refresh token is expired
-            if ($decoded->exp < time()) {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Refresh token expired']);
-                return;
-            }
-
-            // Validate refresh token in DB
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ? AND refresh_token = ?");
-            $stmt->execute([$decoded->sub, $refreshToken]);
+            $stmt = $this->pdo->prepare("SELECT id, email, role, refresh_token FROM users WHERE id = ?");
+            $stmt->execute([$decoded->sub]);
             $user = $stmt->fetch();
 
-            if (!$user) {
+            if (!$user || empty($user['refresh_token']) || !password_verify($refreshToken, $user['refresh_token'])) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Invalid refresh token']);
                 return;
             }
 
-            // Generate new access token (1 min example)
             $issuedAt = time();
-            $expire = $issuedAt + 60; // 1 min
-            $payload = [
+            $accessTtl = $this->convertExpiry($_ENV['ACCESS_TOKEN_EXPIRY']);
+            $refreshTtl = $this->convertExpiry($_ENV['REFRESH_TOKEN_EXPIRY']);
+            $accessToken = JWT::encode([
                 'iat' => $issuedAt,
-                'exp' => $expire,
+                'exp' => $issuedAt + $accessTtl,
                 'sub' => $user['id'],
                 'email' => $user['email'],
                 'role' => $user['role']
-            ];
-            $newAccessToken = JWT::encode($payload, $secretKey, 'HS256');
+            ], $_ENV['ACCESS_TOKEN_SECRET'], 'HS256');
+            $newRefresh = JWT::encode([
+                'iat' => $issuedAt,
+                'exp' => $issuedAt + $refreshTtl,
+                'sub' => $user['id']
+            ], $_ENV['REFRESH_TOKEN_SECRET'], 'HS256');
 
-            echo json_encode([
-                'success' => true,
-                'token' => $newAccessToken
-            ]);
+            $stmt = $this->pdo->prepare("UPDATE users SET refresh_token = ? WHERE id = ?");
+            $stmt->execute([password_hash($newRefresh, PASSWORD_DEFAULT), $user['id']]);
+            setAuthCookies($accessToken, $accessTtl, $newRefresh, $refreshTtl);
+
+            echo json_encode(['success' => true, 'message' => 'Token refreshed']);
         } catch (Exception $e) {
+            error_log($e->getMessage());
+            error_log($e->getMessage());
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Invalid refresh token']);
         }
+    }
+
+    public function logout()
+    {
+        header('Content-Type: application/json');
+        $refreshToken = $_COOKIE['refresh_token'] ?? '';
+        if ($refreshToken !== '') {
+            try {
+                $decoded = JWT::decode($refreshToken, new Key($_ENV['REFRESH_TOKEN_SECRET'], 'HS256'));
+                $stmt = $this->pdo->prepare("UPDATE users SET refresh_token = NULL WHERE id = ?");
+                $stmt->execute([$decoded->sub]);
+            } catch (Exception $e) {
+            error_log($e->getMessage());
+                error_log($e->getMessage());
+            }
+        }
+
+        clearAuthCookies();
+        echo json_encode(['success' => true, 'message' => 'Logged out']);
     }
 
 
@@ -499,7 +516,7 @@ class UserController
 
         try {
             // Fetch user from DB
-            $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT id, fullName, email, password FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -541,11 +558,11 @@ class UserController
                 'message' => 'Password changed successfully'
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -579,6 +596,7 @@ class UserController
                 echo json_encode(['success' => false, 'message' => 'User not found']);
             }
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error']);
         }
@@ -657,11 +675,11 @@ class UserController
             ]);
             exit;
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -706,11 +724,11 @@ class UserController
             ]);
             exit;
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -773,15 +791,14 @@ class UserController
                 echo json_encode([
                     'success' => false,
                     'message' => 'Failed to submit message.',
-                    'errorInfo' => $stmt->errorInfo()
                 ]);
             }
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'An error occurred while sending the message.',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -805,11 +822,11 @@ class UserController
                 'data' => $messages
             ]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'An error occurred while fetching messages.',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -847,6 +864,7 @@ class UserController
                 ]);
             }
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error']);
         }
@@ -865,23 +883,27 @@ class UserController
                 return;
             }
 
-            if (empty($data['email']) || empty($data['newPassword'])) {
+            if (empty($data['email']) || empty($data['newPassword']) || empty($data['reset_token'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Email and new password are required']);
+                echo json_encode(['success' => false, 'message' => 'Email, reset token, and new password are required']);
                 return;
             }
 
             $email = trim($data['email']);
             $newPassword = trim($data['newPassword']);
 
-            // Check if user exists
+            if (!consumeProof($this->pdo, $email, 'reset', $data['reset_token'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid or expired reset token']);
+                return;
+            }
+
             $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if (!$user) {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'User not found']);
+                echo json_encode(['success' => true, 'message' => 'If an account exists for that email, the password has been reset.']);
                 return;
             }
 
@@ -920,21 +942,21 @@ class UserController
                 sendMail($email, $subject, $body);
                 echo json_encode([
                     'success' => true,
-                    'message' => 'Password updated successfully.'
+                    'message' => 'If an account exists for that email, the password has been reset.'
                 ]);
             } else {
                 http_response_code(500);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Failed to update password.',
-                    'errorInfo' => $stmt->errorInfo()
                 ]);
             }
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Server error: ' . $e->getMessage()
+                'message' => 'Server error'
             ]);
         }
     }
@@ -971,6 +993,7 @@ class UserController
                 'delivery_address' => $delivery_address,
             ]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error']);
         }

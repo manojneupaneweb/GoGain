@@ -97,11 +97,11 @@ class DashboardController
                 'data' => $dashboardData
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -128,11 +128,11 @@ class DashboardController
                 ]
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -157,9 +157,17 @@ class DashboardController
 
             $userId = $data['userId'];
             $newRole = $data['role'];
+            $allowedRoles = ['user', 'trainer', 'admin'];
+            if (!in_array($newRole, $allowedRoles, true)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Role must be user, trainer, or admin'
+                ]);
+                return;
+            }
 
-            // Check if user exists
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT id, role FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -182,86 +190,11 @@ class DashboardController
                 'message' => 'User role updated successfully'
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    public function ChangePassword()
-    {
-        global $pdo;
-
-        // Get the raw JSON input
-        $data = json_decode(file_get_contents("php://input"), true);
-
-        $userId = $_SESSION['user_id'];
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ]);
-            return;
-        }
-
-        $currentPassword = $data['currentPassword'] ?? '';
-        $newPassword = $data['newPassword'] ?? '';
-        $confirmPassword = $data['confirmPassword'] ?? '';
-
-        // Basic validation
-        if (!$currentPassword || !$newPassword || !$confirmPassword) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'All fields are required'
-            ]);
-            return;
-        }
-
-        if ($newPassword !== $confirmPassword) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'New password and confirmation do not match'
-            ]);
-            return;
-        }
-
-        try {
-            // Fetch user from DB
-            $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$user || !password_verify($currentPassword, $user['password'])) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Current password is incorrect'
-                ]);
-                return;
-            }
-
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-
-            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $stmt->execute([$hashedPassword, $userId]);
-
-            echo json_encode([
-                'success' => true,
-                'message' => 'Password changed successfully'
-            ]);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -282,11 +215,11 @@ class DashboardController
                 'data' => $users
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -369,11 +302,11 @@ class DashboardController
                 'reason' => $reason,
             ]);
         } catch (Exception $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -394,11 +327,11 @@ class DashboardController
                 'data' => $users
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -416,10 +349,9 @@ class DashboardController
                 return;
             }
 
-            // Read request body
             $data = json_decode(file_get_contents("php://input"), true);
-            $userId = $data['userId'];
-            $date   = date('Y-m-d'); // just date, not full timestamp
+            $userId = $_SESSION['user_id'];
+            $date   = date('Y-m-d');
 
             // First check if same user already has activity for today
             $checkStmt = $pdo->prepare("SELECT id FROM gym_user_activity WHERE userId = :userId AND DATE(date) = :date");
@@ -500,8 +432,9 @@ class DashboardController
                 echo json_encode(['success' => true, 'message' => 'Activity inserted successfully!']);
             }
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database error', 'error' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => 'Database error', 'message' => 'Server error']);
         }
     }
 
@@ -556,11 +489,11 @@ class DashboardController
                 'userId' => $userId
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -615,11 +548,11 @@ class DashboardController
                 'status' => $status
             ]);
         } catch (PDOException $e) {
+            error_log($e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error',
-                'error' => $e->getMessage()
             ]);
         }
     }
@@ -702,7 +635,6 @@ class DashboardController
             echo json_encode([
                 'success' => false,
                 'message' => 'Something went wrong',
-                'error' => $th->getMessage()
             ]);
         }
     }

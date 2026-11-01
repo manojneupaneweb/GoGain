@@ -4,13 +4,12 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-function checkAuth()
+function loadUserFromAccessCookie()
 {
     header('Content-Type: application/json');
 
-    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
-
-    if (!isset($headers['authorization'])) {
+    $token = $_COOKIE['access_token'] ?? '';
+    if ($token === '') {
         http_response_code(401);
         echo json_encode([
             'success' => false,
@@ -19,36 +18,69 @@ function checkAuth()
         exit;
     }
 
-    $authHeader = $headers['authorization'];
-
-    if (strpos($authHeader, 'Bearer ') !== 0) {
+    try {
+        $decoded = JWT::decode($token, new Key($_ENV['ACCESS_TOKEN_SECRET'], 'HS256'));
+    } catch (Exception $e) {
+            error_log($e->getMessage());
+        error_log($e->getMessage());
         http_response_code(401);
         echo json_encode([
             'success' => false,
-            'message' => 'Unauthorized. Invalid token format.'
+            'message' => 'Unauthorized. Invalid or expired token.'
         ]);
         exit;
     }
 
-    $token = trim(substr($authHeader, 7)); 
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT id, fullName, email, phone, gender, role, avatar FROM users WHERE id = ?");
+    $stmt->execute([$decoded->sub]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $secretKey = $_ENV['ACCESS_TOKEN_SECRET'];
-
-    try {
-        $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
-
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $_SESSION['user_id'] = $decoded->sub;
-
-    } catch (Exception $e) {
+    if (!$user) {
         http_response_code(401);
         echo json_encode([
             'success' => false,
-            'message' => 'Unauthorized. Invalid or expired token.',
-            'error' => $e->getMessage()
+            'message' => 'Unauthorized. Invalid or expired token.'
+        ]);
+        exit;
+    }
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_role'] = $user['role'];
+
+    return $user;
+}
+
+function checkAuth()
+{
+    loadUserFromAccessCookie();
+}
+
+function checkAdminAuth()
+{
+    $user = loadUserFromAccessCookie();
+    if ($user['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Forbidden. Admin privileges required.'
+        ]);
+        exit;
+    }
+}
+
+function checkTrainerAuth()
+{
+    $user = loadUserFromAccessCookie();
+    if ($user['role'] !== 'trainer') {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Forbidden. Trainer privileges required.'
         ]);
         exit;
     }

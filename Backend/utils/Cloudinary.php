@@ -21,6 +21,7 @@ function uploadOnCloudinary($file)
         ]);
         return $upload['secure_url'];
     } catch (Exception $e) {
+            error_log($e->getMessage());
         throw new Exception('Upload failed: ' . $e->getMessage());
     }
 }

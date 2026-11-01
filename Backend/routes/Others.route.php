@@ -42,9 +42,10 @@ try {
         echo json_encode(['message' => 'Route not found']);
     }
 } catch (Exception $e) {
+            error_log($e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'message' => 'An error occurred',
-        'error' => $e->getMessage()
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }

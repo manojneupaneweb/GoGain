@@ -3,11 +3,13 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/admin.middleware.php';
 require_once __DIR__ . '/../middleware/auth.middleware.php';
 require_once __DIR__ . '/../controllers/dashboard.controller.php';
+require_once __DIR__ . '/../controllers/UserController.php';
 
 header('Content-Type: application/json');
 
 $pdo = $pdo;
 $DashboardController = new DashboardController($pdo);
+$userController = new UserController($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -24,8 +26,8 @@ try {
         checkAdminAuth();
         $DashboardController->ChangeRole();
     } elseif ($method === 'POST' && preg_match('/\/admin\/change-password\/?$/', $uri)) {
-        checkAdminAuth(); // middleware to ensure only admin can access
-        $DashboardController->ChangePassword();
+        checkAdminAuth();
+        $userController->ChangePassword();
     } elseif ($method === 'GET' && preg_match('/reportdata\/?$/', $uri)) {
         checkAdminAuth();
         $DashboardController->getReportData(); // or whatever method fetches the report
@@ -59,10 +61,10 @@ try {
 
     //Trainner  access Dashboard
     elseif ($method === 'GET' && preg_match('/\/getallusersfortrainer\/?$/', $uri)) {
-        checkAuth();
+        checkTrainerAuth();
         $DashboardController->getAllUsers();
     } elseif ($method === 'POST' && preg_match('/\/daily-activity\/?$/', $uri)) {
-        checkAuth();
+        checkTrainerAuth();
         $DashboardController->activityHistory();
     }
 
@@ -76,9 +78,10 @@ try {
         echo json_encode(['message' => 'Route not found']);
     }
 } catch (Exception $e) {
+            error_log($e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'message' => 'An error occurred',
-        'error' => $e->getMessage()
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }

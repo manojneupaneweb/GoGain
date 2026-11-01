@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/UserController.php';
 require_once __DIR__ . '/../middleware/auth.middleware.php';
+require_once __DIR__ . '/../middleware/admin.middleware.php';
 
 header('Content-Type: application/json');
 
@@ -27,7 +28,12 @@ try {
     } elseif ($method === 'POST' && preg_match('/\/contactform\/?$/', $uri)) {
         $userController->contactform();
     } elseif ($method === 'GET' && preg_match('/\/getcontactform\/?$/', $uri)) {
+        checkAdminAuth();
         $userController->getcontactform();
+    } elseif ($method === 'GET' && preg_match('/\/csrf\/?$/', $uri)) {
+        echo json_encode(['success' => true, 'message' => 'CSRF cookie set']);
+    } elseif ($method === 'POST' && preg_match('/\/logout\/?$/', $uri)) {
+        $userController->logout();
     } elseif ($method === 'POST' && preg_match('/\/forgetpassword\/?$/', $uri)) {
         $userController->forgetPassword();
     }elseif ($method === 'POST' && preg_match('/\/refreshtoken\/?$/', $uri)) {
@@ -62,9 +68,10 @@ try {
         echo json_encode(['message' => 'Route not found']);
     }
 } catch (Exception $e) {
+            error_log($e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'message' => 'An error occurred',
-        'error' => $e->getMessage()
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }

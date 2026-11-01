@@ -33,10 +33,11 @@ function sendMail($to, $subject, $messageBody) {
             'message' => 'Message has been sent successfully'
         ];
     } catch (Exception $e) {
+            error_log($e->getMessage());
+        error_log($mail->ErrorInfo . ' ' . $e->getMessage());
         return [
-            'success' => false, 
-            'message' => "Message could not be sent. Mailer Error: {$mail->ErrorInfo}",
-            'error_details' => $e->getMessage()
+            'success' => false,
+            'message' => 'Message could not be sent.'
         ];
     }
 }
