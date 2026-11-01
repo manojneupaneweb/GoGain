@@ -7,37 +7,57 @@ import "react-toastify/dist/ReactToastify.css";
 
 // Constants
 const STATUS_CONFIG = {
+  pending: {
+    color: "bg-yellow-100 text-yellow-800",
+    icon: <FiPackage className="mr-1" />,
+    label: "Pending",
+    title: "Pending Orders",
+    subtitle: "Manage orders awaiting processing",
+  },
   shipping: {
     color: "bg-blue-100 text-blue-800",
     icon: <FiTruck className="mr-1" />,
     label: "Shipping",
+    title: "Shipping Orders",
+    subtitle: "Manage orders on the way",
   },
   delivered: {
     color: "bg-green-100 text-green-800",
     icon: <FiCheck className="mr-1" />,
     label: "Delivered",
+    title: "Delivered Orders",
+    subtitle: "Manage orders that have arrived",
+  },
+  completed: {
+    color: "bg-purple-100 text-purple-800",
+    icon: <FiCheck className="mr-1" />,
+    label: "Completed",
+    title: "Completed Orders",
+    subtitle: "Orders that are finished",
   },
   cancelled: {
     color: "bg-red-100 text-red-800",
     icon: <FiX className="mr-1" />,
     label: "Cancelled",
+    title: "Cancelled Orders",
+    subtitle: "Orders that were cancelled",
   },
 };
 
-const ACTION_OPTIONS = [
-  {
-    status: "delivered",
-    label: "Mark as Delivered",
-    color: "bg-green-100 text-green-800 hover:bg-green-200",
-    icon: <FiCheck className="mr-1" />,
-  },
-  {
-    status: "cancelled",
-    label: "Cancel Order",
-    color: "bg-red-100 text-red-800 hover:bg-red-200",
-    icon: <FiX className="mr-1" />,
-  },
-];
+const ACTIONS = {
+  pending: ["shipping", "cancelled"],
+  shipping: ["delivered", "cancelled"],
+  delivered: ["completed", "cancelled"],
+  completed: [],
+  cancelled: [],
+};
+
+const ACTION_LABELS = {
+  shipping: { label: "Mark as Shipping", color: "bg-blue-100 text-blue-800 hover:bg-blue-200", icon: <FiTruck className="mr-1" /> },
+  delivered: { label: "Mark as Delivered", color: "bg-green-100 text-green-800 hover:bg-green-200", icon: <FiCheck className="mr-1" /> },
+  completed: { label: "Mark as Completed", color: "bg-purple-100 text-purple-800 hover:bg-purple-200", icon: <FiCheck className="mr-1" /> },
+  cancelled: { label: "Cancel Order", color: "bg-red-100 text-red-800 hover:bg-red-200", icon: <FiX className="mr-1" /> },
+};
 
 const CANCELLATION_REASONS = [
   "Out of stock",
@@ -107,13 +127,13 @@ const ErrorDisplay = ({ error, onRetry }) => (
   </div>
 );
 
-const ConfirmationModal = ({
-  isOpen,
-  onClose,
-  orderId,
-  newStatus,
-  onConfirm,
-  processing
+const ConfirmationModal = ({ 
+  isOpen, 
+  onClose, 
+  orderId, 
+  newStatus, 
+  onConfirm, 
+  processing 
 }) => {
   if (!isOpen) return null;
 
@@ -144,12 +164,13 @@ const ConfirmationModal = ({
           <button
             onClick={onConfirm}
             disabled={processing}
-            className={`px-4 py-2 rounded-md text-white ${newStatus === "completed"
+            className={`px-4 py-2 rounded-md text-white ${
+              newStatus === "completed"
                 ? "bg-green-600 hover:bg-green-700"
                 : newStatus === "cancelled"
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-blue-600 hover:bg-blue-700"
-              } disabled:opacity-50 min-w-24 flex justify-center`}
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            } disabled:opacity-50 min-w-24 flex justify-center`}
           >
             {processing ? (
               <>
@@ -169,13 +190,13 @@ const ConfirmationModal = ({
   );
 };
 
-const CancelModal = ({
-  isOpen,
-  onClose,
-  orderId,
-  onConfirm,
+const CancelModal = ({ 
+  isOpen, 
+  onClose, 
+  orderId, 
+  onConfirm, 
   processing,
-  cancellationReasons
+  cancellationReasons 
 }) => {
   const [cancelReason, setCancelReason] = useState("");
   const [customReason, setCustomReason] = useState("");
@@ -191,10 +212,10 @@ const CancelModal = ({
       toast.error("Please provide a cancellation reason");
       return;
     }
-
+    
     const finalReason = cancelReason === "other" ? customReason : cancelReason;
     onConfirm(finalReason);
-
+    
     // Reset form
     setCancelReason("");
     setCustomReason("");
@@ -276,14 +297,12 @@ const CancelModal = ({
   );
 };
 
-const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) => {
-  const ShippingOrders = orders.filter(order => order.order_status === "shipping");
-
-  if (ShippingOrders.length === 0) {
+const OrderTable = ({ orders, actions, onStatusChange, page, totalPages, onPageChange }) => {
+  if (orders.length === 0) {
     return (
       <div className="p-8 text-center">
         <FiPackage className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">No Shipping Orders</h3>
+        <h3 className="text-lg font-medium text-gray-900">No orders</h3>
         <p className="mt-1 text-sm text-gray-500">
           All orders are processed or there are no orders yet.
         </p>
@@ -327,11 +346,12 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {ShippingOrders.map((order, index) => (
+            {orders.map((order, index) => (
               <OrderRow
                 key={order.id}
                 order={order}
                 index={index}
+                actions={actions}
                 onStatusChange={onStatusChange}
               />
             ))}
@@ -339,10 +359,10 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
         </table>
       </div>
 
-      <Pagination
+      <Pagination 
         page={page}
         totalPages={totalPages}
-        totalItems={ShippingOrders.length}
+        totalItems={orders.length}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={onPageChange}
       />
@@ -350,7 +370,7 @@ const OrderTable = ({ orders, onStatusChange, page, totalPages, onPageChange }) 
   );
 };
 
-const OrderRow = ({ order, index, onStatusChange }) => (
+const OrderRow = ({ order, index, actions, onStatusChange }) => (
   <motion.tr
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -363,10 +383,10 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap flex">
-      <img
+      <img 
         src={order.product_image}
         className="w-10 h-10 rounded-md object-cover mr-2"
-        alt={order.product_name}
+        alt={order.product_name} 
       />
       <div className="text-sm text-gray-900">
         {order.product_name?.substring(0, 8) || "N/A"}
@@ -380,10 +400,10 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap flex">
-      <img
+      <img 
         src={order.avatar}
         className="w-10 h-10 rounded-md object-cover mr-2"
-        alt={order.fullName}
+        alt={order.fullName} 
       />
       <div className="text-sm text-gray-900">
         {order.fullName?.substring(0, 8) || "N/A"}
@@ -413,23 +433,27 @@ const OrderRow = ({ order, index, onStatusChange }) => (
       </div>
     </td>
     <td className="px-6 py-4 whitespace-nowrap">
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center ${STATUS_CONFIG[order.order_status]?.color || "bg-gray-100 text-gray-800"
-        }`}>
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center ${
+        STATUS_CONFIG[order.order_status]?.color || "bg-gray-100 text-gray-800"
+      }`}>
         {STATUS_CONFIG[order.order_status]?.icon}
         {STATUS_CONFIG[order.order_status]?.label || order.order_status}
       </span>
     </td>
     <td className="px-6 py-4 whitespace-nowrap space-x-2">
-      {ACTION_OPTIONS.map((action) => (
+      {actions.map((status) => {
+        const action = ACTION_LABELS[status];
+        return (
         <button
-          key={action.status}
-          onClick={() => onStatusChange(order.id, action.status)}
+          key={status}
+          onClick={() => onStatusChange(order.id, status)}
           className={`px-2 py-1 text-xs rounded-md inline-flex items-center cursor-pointer ${action.color}`}
         >
           {action.icon}
           {action.label}
         </button>
-      ))}
+        );
+      })}
     </td>
   </motion.tr>
 );
@@ -439,22 +463,24 @@ const Pagination = ({ page, totalPages, totalItems, itemsPerPage, onPageChange }
     <div className="text-sm text-gray-600">
       Showing <span className="font-medium">{(page - 1) * itemsPerPage + 1}</span> to{" "}
       <span className="font-medium">{Math.min(page * itemsPerPage, totalItems)}</span> of{" "}
-      <span className="font-medium">{totalItems}</span> Shipping orders
+      <span className="font-medium">{totalItems}</span> pending orders
     </div>
     <div className="flex space-x-2">
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className={`px-3 py-1 rounded-md ${page === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          } text-white text-sm`}
+        className={`px-3 py-1 rounded-md ${
+          page === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+        } text-white text-sm`}
       >
         Previous
       </button>
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className={`px-3 py-1 rounded-md ${page >= totalPages ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
-          } text-sm`}
+        className={`px-3 py-1 rounded-md ${
+          page >= totalPages ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'
+        } text-sm`}
       >
         Next
       </button>
@@ -462,7 +488,9 @@ const Pagination = ({ page, totalPages, totalItems, itemsPerPage, onPageChange }
   </div>
 );
 
-const ShippingOrders = () => {
+const OrderList = ({ status }) => {
+  const actions = ACTIONS[status] || [];
+  const pageMeta = STATUS_CONFIG[status] || { title: "Orders", subtitle: "" };
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -477,10 +505,10 @@ const ShippingOrders = () => {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
-
+    
     try {
       const response = await api.get(`/api/v1/admin/getallorders`, {
-        params: { page, limit: ITEMS_PER_PAGE, status: 'shipping' },
+        params: { page, limit: ITEMS_PER_PAGE, status },
         headers: {
           'Content-Type': 'application/json',
         }
@@ -506,7 +534,7 @@ const ShippingOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, status]);
 
   useEffect(() => {
     fetchOrders();
@@ -533,7 +561,7 @@ const ShippingOrders = () => {
 
   const changeOrderStatus = async (reason = "") => {
     setProcessing(true);
-
+    
     try {
       const response = await api.post(
         '/api/v1/admin/changestatus',
@@ -548,10 +576,7 @@ const ShippingOrders = () => {
           }
         }
       );
-
-      console.log('shipping order response:', response);
-
-      // Update local state
+      
       setOrders(orders.map(order =>
         order.id === currentOrder ? { ...order, order_status: newStatus } : order
       ));
@@ -575,7 +600,7 @@ const ShippingOrders = () => {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <ToastContainer />
-
+      
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={closeConfirmation}
@@ -584,7 +609,7 @@ const ShippingOrders = () => {
         onConfirm={() => changeOrderStatus()}
         processing={processing}
       />
-
+      
       <CancelModal
         isOpen={showCancelModal}
         onClose={closeConfirmation}
@@ -601,8 +626,8 @@ const ShippingOrders = () => {
           transition={{ duration: 0.4 }}
           className="mb-8"
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-white-800">Shipping Orders</h1>
-          <p className="text-white-600 mt-1">Manage orders awaiting processing</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white-800">{pageMeta.title}</h1>
+          <p className="text-white-600 mt-1">{pageMeta.subtitle}</p>
         </motion.div>
 
         <motion.div
@@ -613,6 +638,7 @@ const ShippingOrders = () => {
         >
           <OrderTable
             orders={orders}
+            actions={actions}
             onStatusChange={showConfirmation}
             page={page}
             totalPages={totalPages}
@@ -624,4 +650,4 @@ const ShippingOrders = () => {
   );
 };
 
-export default ShippingOrders;
+export default OrderList;

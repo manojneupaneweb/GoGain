@@ -36,10 +36,7 @@ import AdminDashboard from "./Pages/Admin/AdminDashboard.jsx";
 import PageNotFound from "./Pages/Admin/AdminPageNotFound.jsx";
 import Security from "./Pages/Admin/Settings/Security.jsx";
 import UserPermission from "./Pages/Admin/Settings/UserPermission.jsx";
-import PendingOrders from "./Pages/Admin/Orders/PendingOrders.jsx";
-import ShippingOrders from "./Pages/Admin/Orders/ShippingOrders.jsx";
-import CompleteOrders from "./Pages/Admin/Orders/CompleteOrders.jsx";
-import CancelOrders from "./Pages/Admin/Orders/CancelOrders.jsx";
+import OrderList from "./Pages/Admin/Orders/OrderList.jsx";
 import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
 import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
 import UpdateProduct from "./Pages/Admin/Product/UpdateProduct.jsx";
@@ -47,7 +44,6 @@ import ContactFormMessage from "./Pages/Admin/contactFormMessage.jsx";
 import Customers from "./Pages/Admin/Customers.jsx";
 import Analytics from "./Pages/Admin/Analytics.jsx";
 import Reports from "./Pages/Admin/Reports.jsx";
-import DeliveredOrders from "./Pages/Admin/Orders/DeliveredOrders.jsx";
 
 const router = createBrowserRouter([
     {
@@ -149,11 +145,11 @@ const router = createBrowserRouter([
             { path: "all-product", element: <AllProduct /> },
             { path: "update-product/:id", element: <UpdateProduct /> },
             // Orders
-            { path: "orders/pending", element: <PendingOrders /> },
-            { path: "orders/shipping", element: <ShippingOrders /> },
-            { path: "orders/delivered", element: <DeliveredOrders /> },
-            { path: "orders/complete", element: <CompleteOrders /> },
-            { path: "orders/cancel", element: <CancelOrders /> },
+            { path: "orders/pending", element: <OrderList status="pending" /> },
+            { path: "orders/shipping", element: <OrderList status="shipping" /> },
+            { path: "orders/delivered", element: <OrderList status="delivered" /> },
+            { path: "orders/complete", element: <OrderList status="completed" /> },
+            { path: "orders/cancel", element: <OrderList status="cancelled" /> },
             { path: "customers", element: <Customers /> },
             { path: "analytics", element: <Analytics /> },
             { path: "reports", element: <Reports /> },
