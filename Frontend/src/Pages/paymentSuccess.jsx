@@ -17,23 +17,17 @@ const PaymentSuccess = () => {
   // Extract payment processing into a separate function
   const processPayment = async () => {
     const pidx = searchParams.get('pidx');
-    if (!pidx) {
+    const esewaData = searchParams.get('data');
+    if (!pidx && !esewaData) {
       setError('No payment ID found in URL.');
       setLoading(false);
       return;
     }
 
     try {
-      // Verify payment with Khalti
-      const verifyRes = await api.post(
-        "/api/v1/payment/khalti/verify",
-        { pidx },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const verifyRes = pidx
+        ? await api.post("/api/v1/payment/khalti/verify", { pidx })
+        : await api.post("/api/v1/payment/esewa/verify", { data: esewaData });
 
       if (!verifyRes.data?.success) {
         throw new Error(verifyRes.data?.message || 'Payment verification failed');
@@ -41,14 +35,7 @@ const PaymentSuccess = () => {
 
       const decoded = verifyRes.data?.data;
       setPaymentData(decoded);
-
-      // Create order
-      const orderResp = await api.post(
-        '/api/v1/cart/createorder',
-        { paymentData: decoded },
-        { }
-      );
-      setOrderResponse(orderResp.data);
+      setOrderResponse(decoded);
 
       toast.success("Order placed successfully!");
       setLoading(false);

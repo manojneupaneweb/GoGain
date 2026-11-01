@@ -16,52 +16,24 @@ function Createplan() {
   useEffect(() => {
     const processPayment = async () => {
       const pidx = searchParams.get('pidx');
-      if (!pidx) {
+      const esewaData = searchParams.get('data');
+      if (!pidx && !esewaData) {
         setError('No payment ID found in URL.');
         setLoading(false);
         return;
       }
 
       try {
-        // Verify Khalti payment on backend
-        const verifyRes = await api.post(
-          "/api/v1/payment/khalti/verify",
-          { pidx },
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        const verifyRes = pidx
+          ? await api.post("/api/v1/payment/khalti/verify", { pidx })
+          : await api.post("/api/v1/payment/esewa/verify", { data: esewaData });
 
         if (!verifyRes.data || !verifyRes.data.success) {
           throw new Error(verifyRes.data?.message || 'Payment verification failed');
         }
 
-        // Store payment data for display
         setPaymentData(verifyRes.data.data);
-
-        // Payment verified → now create plan
-        const planItem = localStorage.getItem("selectedPlan");
-        if (!planItem) {
-          throw new Error('No plan selected');
-        }
-
-        const planData = JSON.parse(planItem);
-
-        // Create the plan
-        await api.post(
-          "/api/v1/cart/createplan",
-          { planItem: planData },
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
         toast.success('Plan created successfully!');
-        localStorage.removeItem('selectedPlan');
         setLoading(false);
 
         // Start countdown timer

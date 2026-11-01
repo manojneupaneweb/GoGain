@@ -50,18 +50,14 @@ function Pricing() {
 
     // Handle payment via Khalti (placeholder)
     const handleKhaltiClick = (amount, plan) => {
-        localStorage.setItem(
-            'selectedPlan',
-            JSON.stringify({ name: plan.name, price: amount, duration: plan.duration })
-        );
-        const redirectLink = 'createplan';
-        initiateKhaltiPayment(amount, 2736, redirectLink);
+        initiateKhaltiPayment('plan', plan.key);
         setShowPaymentPopup(false);
     };
 
     // Membership plans data
     const plans = [
         {
+            key: 'basic',
             name: 'Basic',
             price: 'रु. 2000',
             duration: '1 Month',
@@ -75,6 +71,7 @@ function Pricing() {
             popular: false,
         },
         {
+            key: 'standard',
             name: 'Standard',
             price: 'रु. 9000',
             duration: '3 Months',
@@ -88,6 +85,7 @@ function Pricing() {
             popular: true,
         },
         {
+            key: 'premium',
             name: 'Premium',
             price: 'रु. 16000',
             duration: '6 Months',
@@ -101,6 +99,7 @@ function Pricing() {
             popular: false,
         },
         {
+            key: 'elite',
             name: 'Elite Yearly',
             price: 'रु. 30000',
             duration: '1 Year',

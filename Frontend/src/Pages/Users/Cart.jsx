@@ -284,10 +284,8 @@ function Cart() {
             toast.error('Invalid payment amount');
             return;
         }
-        initiateEsewaPayment(amount, 2736);
-
+        initiateEsewaPayment('order');
         setShowPaymentPopup(false);
-        redirect('/paymentsuccess');
     };
 
     const handleKhaltiClick = (amount) => {
@@ -295,7 +293,7 @@ function Cart() {
             toast.error('Invalid payment amount');
             return;
         }
-        initiateKhaltiPayment(amount, 5678);
+        initiateKhaltiPayment('order');
         setShowPaymentPopup(false);
     };
 
