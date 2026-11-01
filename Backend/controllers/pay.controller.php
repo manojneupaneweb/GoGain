@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../utils/plans.php';
-require_once __DIR__ . '/cart.controller.php';
+require_once __DIR__ . '/order.controller.php';
+require_once __DIR__ . '/plan.controller.php';
 require_once __DIR__ . '/../middleware/email.middleware.php';
 
 use Ramsey\Uuid\Uuid;

@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/cart.controller.php';
+require_once __DIR__ . '/../controllers/order.controller.php';
+require_once __DIR__ . '/../controllers/plan.controller.php';
 require_once __DIR__ . '/../middleware/auth.middleware.php';
 
 header('Content-Type: application/json');

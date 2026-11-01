@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../controllers/product.controller.php';
-require_once __DIR__ . '/../controllers/cart.controller.php'; // ✅ Needed
 require_once __DIR__ . '/../middleware/admin.middleware.php';
 
 header('Content-Type: application/json');
