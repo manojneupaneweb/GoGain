@@ -432,20 +432,6 @@ class OrderController
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
-    public function GetOrderItems()
-    {
-        try {
-            return [
-                'success' => true,
-                'orders'  => 'fatch in try'
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error'   => $e->getMessage()
-            ];
-        }
-    }
 }
 
 

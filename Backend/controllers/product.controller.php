@@ -21,14 +21,6 @@ class ProductController
         $this->pdo = $pdo;
     }
 
-    private function uploadImage($tmpPath)
-    {
-        // Dummy URL - replace with your actual image uploader
-        $target = 'uploads/' . uniqid() . '.jpg';
-        move_uploaded_file($tmpPath, $target);
-        return $target;
-    }
-
     public function createProduct()
     {
         header('Content-Type: application/json');
