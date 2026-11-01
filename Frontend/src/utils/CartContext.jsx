@@ -13,12 +13,10 @@ export const CartProvider = ({ children }) => {
   // Fetch cart when app loads
   useEffect(() => {
     const fetchCart = async () => {
-      const token = localStorage.getItem("accessToken");
       try {
         const res = await api.get("/api/v1/cart/getcartitem",
           {
             headers: {
-              Authorization: `Bearer ${token}`,
             },
             withCredentials: true,
           }

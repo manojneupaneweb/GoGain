@@ -9,10 +9,8 @@ function MyProduct() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const token = localStorage.getItem('accessToken');
       try {
         const response = await api.get('/api/v1/user/myorders', {
-          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
 

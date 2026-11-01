@@ -7,11 +7,6 @@ const addToCart = async (product, cartItems, setCartItems, setCartCount) => {
     return;
   }
 
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    toast.error('Please log in to add items to your cart.');
-    return;
-  }
   
   try {
     // Call backend to add product
@@ -21,7 +16,6 @@ const addToCart = async (product, cartItems, setCartItems, setCartCount) => {
       price: product.price,
     }, {
       headers: {
-        Authorization: `Bearer ${token}`
       },
       withCredentials: true
     });

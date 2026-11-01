@@ -483,7 +483,6 @@ const ShippingOrders = () => {
         params: { page, limit: ITEMS_PER_PAGE, status: 'shipping' },
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
 
@@ -545,7 +544,6 @@ const ShippingOrders = () => {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
           }
         }
       );

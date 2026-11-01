@@ -31,14 +31,8 @@ function Header() {
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setUserLoggedIn(false);
-        return;
-      }
 
       const response = await api.get('/api/v1/user/getuser', {
-        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
 

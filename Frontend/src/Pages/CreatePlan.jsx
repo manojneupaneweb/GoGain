@@ -11,7 +11,6 @@ function Createplan() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState(5);
-  const token = localStorage.getItem("accessToken");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,7 +29,6 @@ function Createplan() {
           { pidx },
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           }
@@ -57,7 +55,6 @@ function Createplan() {
           { planItem: planData },
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           }
@@ -93,7 +90,7 @@ function Createplan() {
     };
 
     processPayment();
-  }, [searchParams, token, navigate]);
+  }, [searchParams, navigate]);
 
   if (loading) {
     return (

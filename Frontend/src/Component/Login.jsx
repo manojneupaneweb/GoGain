@@ -15,6 +15,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
   // Forgot password flow state
   const [forgotPasswordStep, setForgotPasswordStep] = useState('login'); // 'login', 'email', 'otp', 'reset'
   const [otp, setOtp] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -41,9 +42,8 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
       const res = await api.post('/api/v1/user/login', { email, password });
       console.log('res login', res);
 
-      if (res.data.success) {
-        localStorage.setItem('accessToken', res.data.token);
-        localStorage.setItem('refreshToken', res.data.refresh_token);
+      if (!res.data.success) {
+        throw new Error(res.data.message || 'Login failed');
       }
 
       toast.success('Login successful!');
@@ -63,7 +63,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      await api.post('/api/v1/user/send-otp', { email: formData.email });
+      await api.post('/api/v1/user/send-otp', { email: formData.email, purpose: 'reset' });
       toast.success('OTP sent to your email');
       setForgotPasswordStep('otp');
     } catch (err) {
@@ -81,10 +81,12 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      await api.post('/api/v1/user/verify-otp', {
+      const res = await api.post('/api/v1/user/verify-otp', {
         email: formData.email,
-        otp: otp.trim()
+        otp: otp.trim(),
+        purpose: 'reset'
       });
+      setResetToken(res.data?.data?.token || '');
       toast.success('OTP verified successfully');
       setForgotPasswordStep('reset');
     } catch (err) {
@@ -109,7 +111,8 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
     try {
       await api.post('/api/v1/user/forgetpassword', {
         email: formData.email,
-        newPassword
+        newPassword,
+        reset_token: resetToken
       });
       toast.success('Password reset successfully');
       setForgotPasswordStep('login');

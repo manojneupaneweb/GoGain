@@ -39,7 +39,6 @@ function AdminDashboard() {
         const response = await api.get('/api/v1/admin/dashboard', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
 

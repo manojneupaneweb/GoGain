@@ -12,7 +12,6 @@ const PaymentSuccess = () => {
   const [error, setError] = useState(null);
   const [orderResponse, setOrderResponse] = useState(null);
   const [countdown, setCountdown] = useState(5);
-  const token = localStorage.getItem("accessToken");
   const navigate = useNavigate();
 
   // Extract payment processing into a separate function
@@ -31,7 +30,6 @@ const PaymentSuccess = () => {
         { pidx },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }
@@ -48,7 +46,7 @@ const PaymentSuccess = () => {
       const orderResp = await api.post(
         '/api/v1/cart/createorder',
         { paymentData: decoded },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { }
       );
       setOrderResponse(orderResp.data);
 
@@ -79,7 +77,7 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     processPayment();
-  }, [searchParams, token, navigate]);
+  }, [searchParams, navigate]);
 
   if (loading) {
     return (

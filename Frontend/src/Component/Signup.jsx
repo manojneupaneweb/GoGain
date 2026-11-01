@@ -66,7 +66,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
     setIsSendingOTP(true);
     try {
-      await api.post('/api/v1/user/send-otp', { email: formData.email });
+      await api.post('/api/v1/user/send-otp', { email: formData.email, purpose: 'register' });
       toast.success('OTP sent to your email!');
       setStep(2);
     } catch (err) {
@@ -84,11 +84,12 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
     setIsVerifyingOTP(true);
     try {
-      await api.post('/api/v1/user/verify-otp', {
+      const verify = await api.post('/api/v1/user/verify-otp', {
         email: formData.email,
-        otp: otp.trim()
+        otp: otp.trim(),
+        purpose: 'register'
       });
-      await handleRegister();
+      await handleRegister(verify.data?.data?.token);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid OTP');
     } finally {
@@ -96,7 +97,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
     }
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (verificationToken) => {
     setIsRegistering(true);
     try {
       const formDataToSend = new FormData();
@@ -105,14 +106,14 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
           formDataToSend.append(key, formData[key]);
         }
       });
+      formDataToSend.append('verification_token', verificationToken || '');
 
-      const res = await api.post('/api/v1/user/register', formDataToSend, {
+      await api.post('/api/v1/user/register', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      localStorage.setItem('accessToken', res.data.token);
       toast.success('Registration successful!');
       onSuccess();
     } catch (err) {

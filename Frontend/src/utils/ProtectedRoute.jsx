@@ -6,12 +6,8 @@ import { toast } from "react-toastify";
 import Loading from "../Component/Loading";
 
 const fetchUser = async () => {
-  const token = localStorage.getItem("accessToken");
   try {
-    const response = await api.get("/api/v1/user/getuser", {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true,
-    });
+    const response = await api.get("/api/v1/user/getuser");
     return response.data;
   } catch (error) {
     console.error("Error fetching user:", error);

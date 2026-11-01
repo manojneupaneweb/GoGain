@@ -64,7 +64,6 @@ export const initiateKhaltiPayment = async (amount, productId, redirectLink) => 
 
     const response = await api.post("/api/v1/payment/khalti/initiate", payload, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         "Content-Type": "application/json"
       },
     });

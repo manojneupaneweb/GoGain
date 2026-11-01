@@ -115,12 +115,6 @@ function UpdateProduct() {
     e.preventDefault();
     setLoading(true);
 
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      toast.error('Authentication required. Please login.');
-      setLoading(false);
-      return;
-    }
 
     const formData = new FormData();
     formData.append('name', productData.name);
@@ -139,7 +133,6 @@ function UpdateProduct() {
        await api.post(`/api/v1/product/updateproduct/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
         },
         withCredentials: true
       });

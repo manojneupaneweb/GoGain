@@ -27,16 +27,9 @@ export default function AdminLayout() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState(null);
 
-  const token = localStorage.getItem('accessToken');
   const fetchUser = async () => {
     try {
-      if (!token) {
-        console.error('No access token found');
-        setUser(null);
-        return;
-      }
       const response = await api.get('/api/v1/user/getuser', {
-        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
       console.log('User fetch response:', response.data);
@@ -55,7 +48,7 @@ export default function AdminLayout() {
 
   useEffect(() => {
     fetchUser();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {

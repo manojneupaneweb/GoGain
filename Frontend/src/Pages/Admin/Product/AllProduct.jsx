@@ -21,14 +21,9 @@ function AllProduct() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-          throw new Error('Authentication required. Please login.');
-        }
 
         const response = await api.get("/api/v1/product/getallproduct", {
           headers: {
-            'Authorization': `Bearer ${token}`
           },
           withCredentials: true
         });
@@ -67,10 +62,6 @@ function AllProduct() {
   const handleDelete = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-        throw new Error('Authentication required. Please login.');
-      }
       if (productToDelete.id === undefined) {
         throw new Error('Product ID is not defined. Please select a valid product.');
 
@@ -78,7 +69,6 @@ function AllProduct() {
 
       await api.delete(`/api/v1/product/deleteproduct/${productToDelete.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
         },
         withCredentials: true
       });

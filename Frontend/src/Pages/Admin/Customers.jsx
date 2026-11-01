@@ -20,7 +20,6 @@ const Customers = () => {
       const response = await api.get('/api/v1/admin/getalluserinformation', {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
       

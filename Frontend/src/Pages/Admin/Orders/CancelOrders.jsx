@@ -25,7 +25,6 @@ function CancelledOrders() {
         params: { status: 'cancelled' },
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
 

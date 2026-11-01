@@ -19,19 +19,13 @@ function ProductListing() {
   const { cartItems, setCartItems, setCartCount } = useCart();
   const handleAddtoCart = async (product) => {
     const verifyUser = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        return false
-      };
 
       try {
         const response = await api.get('/api/v1/user/verify-user', {
-          headers: { Authorization: `Bearer ${token}` },
         });
         return { success: response.data.success, role: response.data.role };
       } catch (error) {
         console.error('Error verifying user:', error);
-        localStorage.removeItem('accessToken');
         return false;
       }
     };

@@ -67,7 +67,6 @@ function UserSetting() {
       const response = await api.post('/api/v1/user/change-password', formData, {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
       

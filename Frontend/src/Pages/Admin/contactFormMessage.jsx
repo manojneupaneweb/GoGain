@@ -13,9 +13,7 @@ const ContactFormMessage = () => {
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
                 const response = await api.get('/api/v1/user/getcontactform', {
-                    headers: { Authorization: `Bearer ${token}` },
                     withCredentials: true
                 });
                 setMessages(response.data.data);
@@ -41,9 +39,7 @@ const ContactFormMessage = () => {
 
     const markAsSeen = async (id) => {
         try {
-            const token = localStorage.getItem('accessToken');
             await api.patch(`/api/v1/user/markasseen/${id}`, {}, {
-                headers: { Authorization: `Bearer ${token}` },
                 withCredentials: true
             });
             setMessages(messages.map(msg =>

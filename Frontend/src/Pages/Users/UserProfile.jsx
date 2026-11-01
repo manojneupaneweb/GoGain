@@ -16,10 +16,8 @@ function UserProfile() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const token = localStorage.getItem('accessToken');
       try {
         const response = await api.get('/api/v1/user/getuserprofile', {
-          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
 

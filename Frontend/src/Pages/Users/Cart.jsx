@@ -21,7 +21,6 @@ function Cart() {
     const [activeTab, setActiveTab] = useState('esewa');
     const { cartItems, setCartItems, setCartCount } = useCart();
     const [disabled, setDisabled] = useState();
-    const token = localStorage.getItem('accessToken');
 
     // Address form state
     const [provinces, setProvinces] = useState([]);
@@ -37,7 +36,6 @@ function Cart() {
             setLoading(true);
             const response = await api.get('/api/v1/cart/getcartitem', {
                 headers: {
-                    Authorization: `Bearer ${token}`
                 },
                 withCredentials: true
             });
@@ -81,12 +79,10 @@ function Cart() {
             setCartItems(updatedItems);
             calculateTotals(updatedItems);
 
-            const token = localStorage.getItem('accessToken');
             await api.put(
                 `/api/v1/cart/${productId}`,
                 { quantity: newQuantity },
                 {
-                    headers: { Authorization: `Bearer ${token}` },
                     withCredentials: true
                 }
             );
@@ -111,10 +107,8 @@ function Cart() {
             calculateTotals(updatedItems);
 
             // Call backend to delete
-            const token = localStorage.getItem('accessToken');
             await api.delete(`/api/v1/cart/delete/${productId}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`
                 },
                 withCredentials: true
             });
@@ -265,7 +259,6 @@ function Cart() {
                 { address: fullAddress },
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`
                     },
                     withCredentials: true
                 }

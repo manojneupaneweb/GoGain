@@ -48,28 +48,16 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setIsSubmitting(false);
-      toast.error('Please Login !');
-      return;
-    }
 
     try {
       const verifyUser = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        return false
-      };
 
       try {
         const response = await api.get('/api/v1/user/verify-user', {
-          headers: { Authorization: `Bearer ${token}` },
         });
         return { success: response.data.success, role: response.data.role };
       } catch (error) {
         console.error('Error verifying user:', error);
-        localStorage.removeItem('accessToken');
         return false;
       }
     };
@@ -118,7 +106,6 @@ const Contact = () => {
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('accessToken');
         toast.error('User verification failed. Please login.');
       } else {
         toast.error(err.response?.data?.message || 'An error occurred');

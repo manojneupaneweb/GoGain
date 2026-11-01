@@ -17,7 +17,6 @@ const UserDashboard = () => {
     const fetchUserActivity = async () => {
       try {
         const response = await api.get('/api/v1/admin/getuseractivity', {
-          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
           withCredentials: true,
         });
         setUserData(response.data.data || []);

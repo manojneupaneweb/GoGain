@@ -47,7 +47,6 @@ function UserPermission() {
         const response = await api.get('/api/v1/admin/getallusers', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
 
@@ -105,7 +104,6 @@ function UserPermission() {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         }
       );

@@ -67,7 +67,6 @@ function Security() {
       const response = await api.post('/api/v1/admin/change-password', formData, {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
       

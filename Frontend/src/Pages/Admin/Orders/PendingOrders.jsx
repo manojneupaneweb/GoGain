@@ -487,7 +487,6 @@ const PendingOrders = () => {
         params: { page, limit: ITEMS_PER_PAGE, status: 'pending' },
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
 
@@ -549,7 +548,6 @@ const PendingOrders = () => {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`
           }
         }
       );

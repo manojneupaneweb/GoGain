@@ -1,22 +1,13 @@
-import Cookies from 'js-cookie'; 
+import api from './api';
 
 const handleLogout = async () => {
   try {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      console.error('No token found, cannot logout');
-      return;
-    }
-
-    localStorage.removeItem('accessToken');
-    Cookies.remove('accessToken');
-    sessionStorage.removeItem('accessToken');
-
-    window.location.href = '/';
-
+    await api.post('/api/v1/user/logout');
   } catch (error) {
     console.error('Error during logout:', error);
   }
+
+  window.location.href = '/';
 };
 
 export default handleLogout;

@@ -59,7 +59,6 @@ const TrainerDashboard = () => {
     try {
       setIsLoading(true);
       const res = await api.get("/api/v1/admin/getallusersfortrainer", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
       const filtered = res.data.data.users.filter(
         (u) =>
@@ -150,7 +149,6 @@ const TrainerDashboard = () => {
 
     try {
       const payload = {
-        userId: selectedUser.id,
         ...formData,
         sets: formData.sets || null,
         reps: formData.reps || null,
@@ -162,9 +160,7 @@ const TrainerDashboard = () => {
         muscleMass: formData.muscleMass || null,
       };
 
-      await api.post("/api/v1/admin/daily-activity", payload, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      });
+      await api.post("/api/v1/admin/daily-activity", payload);
 
       toast.success("Activity logged successfully!");
 
