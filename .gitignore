@@ -1,0 +1,16 @@
+vendor/
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+dist-ssr/
+uploads/
+tmp/
+temp/
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
+.phpunit.result.cache

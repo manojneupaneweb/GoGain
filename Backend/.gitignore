@@ -4,8 +4,6 @@
 .env.local
 .env.*.local
 
-.gitignore
-
 .DS_Store
 Thumbs.db
 
