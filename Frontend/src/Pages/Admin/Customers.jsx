@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiPhone, FiHome, FiCalendar, FiClock, FiLogIn, FiX, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -17,7 +17,7 @@ const Customers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/v1/admin/getalluserinformation', {
+      const response = await api.get('/api/v1/admin/getalluserinformation', {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`

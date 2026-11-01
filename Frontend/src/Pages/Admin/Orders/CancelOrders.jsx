@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { FiX, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -21,7 +21,7 @@ function CancelledOrders() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/v1/admin/getallorders`, {
+      const response = await api.get(`/api/v1/admin/getallorders`, {
         params: { status: 'cancelled' },
         headers: {
           'Content-Type': 'application/json',

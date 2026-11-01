@@ -1,6 +1,6 @@
 import { FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import api from '../utils/api';
 import { useState } from 'react';
 import { toast,ToastContainer } from 'react-toastify';
 
@@ -63,7 +63,7 @@ const Contact = () => {
       };
 
       try {
-        const response = await axios.get('/api/v1/user/verify-user', {
+        const response = await api.get('/api/v1/user/verify-user', {
           headers: { Authorization: `Bearer ${token}` },
         });
         return { success: response.data.success, role: response.data.role };
@@ -91,7 +91,7 @@ const Contact = () => {
     }
 
       // Submit contact form
-      const response = await axios.post('/api/v1/user/contactform', formData);
+      const response = await api.post('/api/v1/user/contactform', formData);
 
       if (response.data.success) {
         setCooldown(300);

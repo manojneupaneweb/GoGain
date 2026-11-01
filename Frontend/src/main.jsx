@@ -4,7 +4,6 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
-import axios from "axios";
 import Loading from "./Component/Loading.jsx";
 
 // ProtectedRoute
@@ -24,20 +23,20 @@ import UserDashboard from "./Pages/Users/UserDashboard.jsx";
 import UserProfile from "./Pages/Users/UserProfile.jsx";
 import UserSetting from "./Pages/Users/UserSetting.jsx";
 import MyProduct from "./Pages/Users/MyProduct.jsx";
-import Createplan from "./Pages/createplan.jsx";
+import Createplan from "./Pages/CreatePlan.jsx";
 import Cart from "./Pages/Users/Cart.jsx";
 import PaymentSuccess from "./Pages/paymentSuccess.jsx";
 
 // Trainer Pages
-import TrannirDashboard from "./Pages/Trannir/TrannirDashboard.jsx";
+import TrainerDashboard from "./Pages/Trainer/TrainerDashboard.jsx";
 
 // Admin Pages
 import AdminLayout from "./Pages/Admin/AdminLayout.jsx";
 import AdminDashboard from "./Pages/Admin/AdminDashboard.jsx";
 import PageNotFound from "./Pages/Admin/AdminPageNotFound.jsx";
-import Security from "./Pages/Admin/Settings/security.jsx";
+import Security from "./Pages/Admin/Settings/Security.jsx";
 import UserPermission from "./Pages/Admin/Settings/UserPermission.jsx";
-import PendingOrdres from "./Pages/Admin/Orders/PendingOrdres.jsx";
+import PendingOrders from "./Pages/Admin/Orders/PendingOrders.jsx";
 import ShippingOrders from "./Pages/Admin/Orders/ShippingOrders.jsx";
 import CompleteOrders from "./Pages/Admin/Orders/CompleteOrders.jsx";
 import CancelOrders from "./Pages/Admin/Orders/CancelOrders.jsx";
@@ -45,12 +44,10 @@ import AddProduct from "./Pages/Admin/Product/AddProduct.jsx";
 import AllProduct from "./Pages/Admin/Product/AllProduct.jsx";
 import UpdateProduct from "./Pages/Admin/Product/UpdateProduct.jsx";
 import ContactFormMessage from "./Pages/Admin/contactFormMessage.jsx";
-import Constumers from "./Pages/Admin/Constumers.jsx";
+import Customers from "./Pages/Admin/Customers.jsx";
 import Analytics from "./Pages/Admin/Analytics.jsx";
 import Reports from "./Pages/Admin/Reports.jsx";
-import DeleverdOrders from "./Pages/Admin/Orders/DeleverdOrders.jsx";
-// Axios default
-axios.defaults.baseURL = "http://localhost:3000";
+import DeliveredOrders from "./Pages/Admin/Orders/DeliveredOrders.jsx";
 
 const router = createBrowserRouter([
     {
@@ -130,7 +127,7 @@ const router = createBrowserRouter([
                 path: "/trainer-dashboard",
                 element: (
                     <ProtectedRoute allowedRoles={["trainer"]}>
-                        <TrannirDashboard />
+                        <TrainerDashboard />
                     </ProtectedRoute>
                 ),
             },
@@ -152,12 +149,12 @@ const router = createBrowserRouter([
             { path: "all-product", element: <AllProduct /> },
             { path: "update-product/:id", element: <UpdateProduct /> },
             // Orders
-            { path: "orders/pending", element: <PendingOrdres /> },
+            { path: "orders/pending", element: <PendingOrders /> },
             { path: "orders/shipping", element: <ShippingOrders /> },
-            { path: "orders/deleverd", element: <DeleverdOrders /> },
+            { path: "orders/delivered", element: <DeliveredOrders /> },
             { path: "orders/complete", element: <CompleteOrders /> },
             { path: "orders/cancel", element: <CancelOrders /> },
-            { path: "customers", element: <Constumers /> },
+            { path: "customers", element: <Customers /> },
             { path: "analytics", element: <Analytics /> },
             { path: "reports", element: <Reports /> },
             // Settings

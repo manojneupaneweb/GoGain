@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { Link } from 'react-router-dom';
 
 function MyProduct() {
@@ -11,7 +11,7 @@ function MyProduct() {
     const fetchOrders = async () => {
       const token = localStorage.getItem('accessToken');
       try {
-        const response = await axios.get('/api/v1/users/myorders', {
+        const response = await api.get('/api/v1/user/myorders', {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { FiMail, FiUser, FiClock, FiMessageSquare, FiCheck, FiAlertCircle, FiSearch } from 'react-icons/fi';
 import { IoIosArrowBack } from 'react-icons/io';
 
@@ -14,7 +14,7 @@ const ContactFormMessage = () => {
         const fetchMessages = async () => {
             try {
                 const token = localStorage.getItem('accessToken');
-                const response = await axios.get('/api/v1/user/getcontactform', {
+                const response = await api.get('/api/v1/user/getcontactform', {
                     headers: { Authorization: `Bearer ${token}` },
                     withCredentials: true
                 });
@@ -42,7 +42,7 @@ const ContactFormMessage = () => {
     const markAsSeen = async (id) => {
         try {
             const token = localStorage.getItem('accessToken');
-            await axios.patch(`/api/v1/user/markasseen/${id}`, {}, {
+            await api.patch(`/api/v1/user/markasseen/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` },
                 withCredentials: true
             });

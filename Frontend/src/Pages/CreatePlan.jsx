@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaCheckCircle, FaShoppingBag, FaClock, FaArrowRight, FaBoxOpen, FaExclamationTriangle } from 'react-icons/fa';
@@ -25,7 +25,7 @@ function Createplan() {
 
       try {
         // Verify Khalti payment on backend
-        const verifyRes = await axios.post(
+        const verifyRes = await api.post(
           "/api/v1/payment/khalti/verify",
           { pidx },
           {
@@ -52,7 +52,7 @@ function Createplan() {
         const planData = JSON.parse(planItem);
 
         // Create the plan
-        await axios.post(
+        await api.post(
           "/api/v1/cart/createplan",
           { planItem: planData },
           {

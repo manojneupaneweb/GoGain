@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import Loading from '../Component/Loading';
 import { useCart } from '../utils/CartContext.jsx';
 import addToCart from '../utils/CartUtils.jsx';
@@ -25,7 +25,7 @@ function ProductListing() {
       };
 
       try {
-        const response = await axios.get('/api/v1/user/verify-user', {
+        const response = await api.get('/api/v1/user/verify-user', {
           headers: { Authorization: `Bearer ${token}` },
         });
         return { success: response.data.success, role: response.data.role };
@@ -61,7 +61,7 @@ function ProductListing() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("/api/v1/product/getallproduct");
+        const response = await api.get("/api/v1/product/getallproduct");
 
         const productsData = response.data.data;
         setProducts(productsData);

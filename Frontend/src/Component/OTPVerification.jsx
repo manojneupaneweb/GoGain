@@ -1,5 +1,5 @@
 // import { useState,  } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'react-toastify';
 import { FaDumbbell, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
 
@@ -56,7 +56,7 @@ const OTPVerification = ({
     setIsVerifying(true);
 
     try {
-      const verifyResponse = await axios.post(
+      const verifyResponse = await api.post(
         '/api/v1/user/verify-otp',
         { email, otp: otpValue },
         { withCredentials: true }

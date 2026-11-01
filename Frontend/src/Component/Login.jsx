@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'react-toastify';
 import { FaUser, FaEnvelope, FaLock, FaTimes, FaDumbbell, FaEye, FaEyeSlash, FaCheck, FaArrowLeft } from 'react-icons/fa';
 
@@ -38,7 +38,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     try {
       const { email, password } = formData;
-      const res = await axios.post('/api/v1/user/login', { email, password });
+      const res = await api.post('/api/v1/user/login', { email, password });
       console.log('res login', res);
 
       if (res.data.success) {
@@ -63,7 +63,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      await axios.post('/api/v1/user/send-otp', { email: formData.email });
+      await api.post('/api/v1/user/send-otp', { email: formData.email });
       toast.success('OTP sent to your email');
       setForgotPasswordStep('otp');
     } catch (err) {
@@ -81,7 +81,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      await axios.post('/api/v1/user/verify-otp', {
+      await api.post('/api/v1/user/verify-otp', {
         email: formData.email,
         otp: otp.trim()
       });
@@ -107,7 +107,7 @@ const Login = ({ onClose, onSuccess, onSwitchToSignup }) => {
 
     setIsLoading(true);
     try {
-      await axios.post('/api/v1/user/forgetpassword', {
+      await api.post('/api/v1/user/forgetpassword', {
         email: formData.email,
         newPassword
       });

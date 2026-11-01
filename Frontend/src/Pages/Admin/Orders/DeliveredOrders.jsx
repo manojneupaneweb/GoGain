@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../../../utils/api";
 import { motion } from "framer-motion";
 import { FiPackage, FiTruck, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
@@ -483,7 +483,7 @@ const DeliveredOrders = () => {
     setError(null);
 
     try {
-      const response = await axios.get(`/api/v1/admin/getallorders`, {
+      const response = await api.get(`/api/v1/admin/getallorders`, {
         params: { page, limit: ITEMS_PER_PAGE, status: 'delivered' },
         headers: {
           'Content-Type': 'application/json',
@@ -539,7 +539,7 @@ const DeliveredOrders = () => {
     setProcessing(true);
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         '/api/v1/admin/changestatus',
         {
           orderId: currentOrder,

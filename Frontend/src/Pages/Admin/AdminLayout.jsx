@@ -16,8 +16,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
-import axios from 'axios';
-import handelLogout from '../../utils/Logout';
+import api from '../../utils/api';
+import handleLogout from '../../utils/Logout';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -35,7 +35,7 @@ export default function AdminLayout() {
         setUser(null);
         return;
       }
-      const response = await axios.get('/api/v1/user/getuser', {
+      const response = await api.get('/api/v1/user/getuser', {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
@@ -104,7 +104,7 @@ export default function AdminLayout() {
       submenu: [
         { name: 'Pending', path: '/admin/orders/pending' },
         { name: 'Shipping', path: '/admin/orders/shipping' },
-        { name: 'Deleverd', path: '/admin/orders/deleverd' },
+        { name: 'Delivered', path: '/admin/orders/delivered' },
         { name: 'Complete', path: '/admin/orders/complete' },
         { name: 'Cancel', path: '/admin/orders/cancel' },
       ],
@@ -351,7 +351,7 @@ export default function AdminLayout() {
                     </a>
                     <button
                       className="block px-4 py-2 text-sm transition-colors duration-300 text-gray-300 hover:bg-gray-700 hover:text-white"
-                      onClick={handelLogout}>
+                      onClick={handleLogout}>
                       Logout
 
                     </button>

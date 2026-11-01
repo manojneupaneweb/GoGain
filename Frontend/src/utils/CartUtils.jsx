@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 import { toast } from 'react-toastify';
 
 const addToCart = async (product, cartItems, setCartItems, setCartCount) => {
@@ -15,7 +15,7 @@ const addToCart = async (product, cartItems, setCartItems, setCartCount) => {
   
   try {
     // Call backend to add product
-    const res = await axios.post('/api/v1/cart/addtocart', {
+    const res = await api.post('/api/v1/cart/addtocart', {
       product_id: product.id,
       quantity: 1,
       price: product.price,

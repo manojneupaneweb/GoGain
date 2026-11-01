@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar 
@@ -16,7 +16,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchUserActivity = async () => {
       try {
-        const response = await axios.get('/api/v1/admin/getuseractivity', {
+        const response = await api.get('/api/v1/admin/getuseractivity', {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
           withCredentials: true,
         });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
@@ -23,7 +23,7 @@ function UpdateProduct() {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/v1/product/${id}`);
+      const response = await api.get(`/api/v1/product/${id}`);
       const product = response.data.data;
 
       // Parse specifications if they're stored as string
@@ -136,7 +136,7 @@ function UpdateProduct() {
     formData.append('specifications', JSON.stringify(productData.specifications));
 
     try {
-       await axios.post(`/api/v1/product/updateproduct/${id}`, formData, {
+       await api.post(`/api/v1/product/updateproduct/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

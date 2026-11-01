@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'react-toastify';
 import {
   FaUserCircle, FaEnvelope, FaLock, FaPhone,
@@ -66,7 +66,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
     setIsSendingOTP(true);
     try {
-      await axios.post('/api/v1/user/send-otp', { email: formData.email });
+      await api.post('/api/v1/user/send-otp', { email: formData.email });
       toast.success('OTP sent to your email!');
       setStep(2);
     } catch (err) {
@@ -84,7 +84,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
 
     setIsVerifyingOTP(true);
     try {
-      await axios.post('/api/v1/user/verify-otp', {
+      await api.post('/api/v1/user/verify-otp', {
         email: formData.email,
         otp: otp.trim()
       });
@@ -106,7 +106,7 @@ const Signup = ({ onClose, onSuccess, onSwitchToLogin }) => {
         }
       });
 
-      const res = await axios.post('/api/v1/user/register', formDataToSend, {
+      const res = await api.post('/api/v1/user/register', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

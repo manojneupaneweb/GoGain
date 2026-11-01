@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
 import { initiateKhaltiPayment } from '../utils/payment';
 import { motion as Motion } from 'framer-motion';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 
 function Pricing() {
@@ -16,7 +16,7 @@ function Pricing() {
         };
 
         try {
-            const response = await axios.get('/api/v1/user/verify-user', {
+            const response = await api.get('/api/v1/user/verify-user', {
                 headers: { Authorization: `Bearer ${token}` },
             });
             return { success: response.data.success, role: response.data.role };

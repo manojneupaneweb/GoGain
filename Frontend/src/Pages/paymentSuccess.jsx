@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { FaCheckCircle, FaShoppingBag, FaClock, FaArrowRight, FaBoxOpen, FaExclamationTriangle } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -26,7 +26,7 @@ const PaymentSuccess = () => {
 
     try {
       // Verify payment with Khalti
-      const verifyRes = await axios.post(
+      const verifyRes = await api.post(
         "/api/v1/payment/khalti/verify",
         { pidx },
         {
@@ -45,7 +45,7 @@ const PaymentSuccess = () => {
       setPaymentData(decoded);
 
       // Create order
-      const orderResp = await axios.post(
+      const orderResp = await api.post(
         '/api/v1/cart/createorder',
         { paymentData: decoded },
         { headers: { Authorization: `Bearer ${token}` } }

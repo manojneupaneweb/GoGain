@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import CryptoJS from "crypto-js";
-import axios from 'axios';
+import api from './api';
 import { toast } from "react-toastify";
 
 
@@ -62,7 +62,7 @@ export const initiateKhaltiPayment = async (amount, productId, redirectLink) => 
       redirectLink: redirectLink || "paymentsuccess",
     };
 
-    const response = await axios.post("/api/v1/payment/khalti/initiate", payload, {
+    const response = await api.post("/api/v1/payment/khalti/initiate", payload, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         "Content-Type": "application/json"

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Loading from '../Component/Loading';
@@ -13,7 +13,7 @@ function ProductShow() {
     const fetchProduct = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`/api/v1/product/${id}`);
+            const response = await api.get(`/api/v1/product/${id}`);
             setProduct(response.data.data);
             setLoading(false);
         } catch (err) {

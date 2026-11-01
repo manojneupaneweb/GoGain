@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -58,7 +58,7 @@ const TrainerDashboard = () => {
   const searchUsers = async () => {
     try {
       setIsLoading(true);
-      const res = await axios.get("api/v1/admin/getallusersfortrainer", {
+      const res = await api.get("/api/v1/admin/getallusersfortrainer", {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
       const filtered = res.data.data.users.filter(
@@ -162,7 +162,7 @@ const TrainerDashboard = () => {
         muscleMass: formData.muscleMass || null,
       };
 
-      await axios.post("api/v1/admin/daily-activity", payload, {
+      await api.post("/api/v1/admin/daily-activity", payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       });
 

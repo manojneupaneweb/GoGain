@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { motion } from 'framer-motion';
 import { FiCheck, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -24,7 +24,7 @@ function CompleteOrders() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/v1/admin/getallorders`, {
+      const response = await api.get(`/api/v1/admin/getallorders`, {
         params: { page, limit , status: 'completed'},
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie'; 
 
-const handelLogout = async () => {
+const handleLogout = async () => {
   try {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -19,4 +19,4 @@ const handelLogout = async () => {
   }
 };
 
-export default handelLogout;
+export default handleLogout;

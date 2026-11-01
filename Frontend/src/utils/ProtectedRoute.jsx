@@ -1,5 +1,5 @@
 // utils/ProtectedRoute.jsx
-import axios from "axios";
+import api from "./api";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -8,7 +8,7 @@ import Loading from "../Component/Loading";
 const fetchUser = async () => {
   const token = localStorage.getItem("accessToken");
   try {
-    const response = await axios.get("/api/v1/user/getuser", {
+    const response = await api.get("/api/v1/user/getuser", {
       headers: { Authorization: `Bearer ${token}` },
       withCredentials: true,
     });

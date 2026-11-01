@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiRefreshCw } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -26,7 +26,7 @@ function AllProduct() {
           throw new Error('Authentication required. Please login.');
         }
 
-        const response = await axios.get("/api/v1/product/getallproduct", {
+        const response = await api.get("/api/v1/product/getallproduct", {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -76,7 +76,7 @@ function AllProduct() {
 
       }
 
-      await axios.delete(`/api/v1/product/deleteproduct/${productToDelete.id}`, {
+      await api.delete(`/api/v1/product/deleteproduct/${productToDelete.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -83,7 +83,7 @@ function AddProduct() {
     formData.append('specifications', JSON.stringify(productData.specifications));
 
     try {
-      const response = await axios.post('/api/v1/product/addproduct', formData, {
+      const response = await api.post('/api/v1/product/addproduct', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

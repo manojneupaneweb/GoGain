@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -44,7 +44,7 @@ function UserPermission() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('/api/v1/admin/getallusers', {
+        const response = await api.get('/api/v1/admin/getallusers', {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -99,7 +99,7 @@ function UserPermission() {
     setShowConfirmDialog(false);
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `/api/v1/admin/changerole`,
         { role: newRole, userId: selectedUser.id },
         {

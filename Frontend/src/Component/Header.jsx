@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaBars, FaTimes, FaUser, FaDumbbell, FaChevronDown, FaShoppingCart } from 'react-icons/fa';
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Login from './Login';
 import Signup from './Signup';
 import OTPVerification from './OTPVerification';
-import handelLogout from '../utils/Logout.js';
+import handleLogout from '../utils/Logout.js';
 import { useCart } from '../utils/CartContext.jsx';
 
 function Header() {
@@ -37,7 +37,7 @@ function Header() {
         return;
       }
 
-      const response = await axios.get('/api/v1/user/getuser', {
+      const response = await api.get('/api/v1/user/getuser', {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
@@ -506,7 +506,7 @@ const UserDropdown = ({ userData }) => {
             <div className="border-t border-gray-700 my-2"></div>
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={handelLogout}
+              onClick={handleLogout}
               className="block w-full text-left px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white font-medium transition-all duration-300 rounded-lg mx-1"
             >
               Logout
@@ -578,7 +578,7 @@ const UserDropdownMobile = ({ userData }) => {
 
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={handelLogout}
+              onClick={handleLogout}
               className="px-4 py-2 text-left text-gray-300 hover:bg-red-600 hover:text-white font-medium transition-all duration-300 text-sm w-full"
             >
               Logout

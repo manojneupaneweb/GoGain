@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -64,7 +64,7 @@ function Security() {
     setIsSubmitting(true);
     
     try {
-      const response = await axios.post('/api/v1/admin/change-password', formData, {
+      const response = await api.post('/api/v1/admin/change-password', formData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`

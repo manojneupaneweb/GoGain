@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,7 +36,7 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await axios.get('/api/v1/admin/dashboard', {
+        const response = await api.get('/api/v1/admin/dashboard', {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`

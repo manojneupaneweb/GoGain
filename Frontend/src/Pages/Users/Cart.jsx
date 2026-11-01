@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaTrash, FaPlus, FaMinus, FaShoppingCart, FaTimes, FaLock, FaShieldAlt } from 'react-icons/fa';
@@ -35,7 +35,7 @@ function Cart() {
         setDisabled(true);
         try {
             setLoading(true);
-            const response = await axios.get('/api/v1/cart/getcartitem', {
+            const response = await api.get('/api/v1/cart/getcartitem', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
@@ -82,7 +82,7 @@ function Cart() {
             calculateTotals(updatedItems);
 
             const token = localStorage.getItem('accessToken');
-            await axios.put(
+            await api.put(
                 `/api/v1/cart/${productId}`,
                 { quantity: newQuantity },
                 {
@@ -112,7 +112,7 @@ function Cart() {
 
             // Call backend to delete
             const token = localStorage.getItem('accessToken');
-            await axios.delete(`/api/v1/cart/delete/${productId}`, {
+            await api.delete(`/api/v1/cart/delete/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
@@ -261,7 +261,7 @@ function Cart() {
             const districtName = districts.find(d => d.id === parseInt(selectedDistrict))?.name;
             const fullAddress = `${provinceName}, ${districtName}, ${localAddress}`;
 
-            await axios.post('/api/v1/user/deliveryaddress',
+            await api.post('/api/v1/user/deliveryaddress',
                 { address: fullAddress },
                 {
                     headers: {
