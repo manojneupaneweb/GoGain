@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   useEffect(() => {
     const getUser = async () => {
       const userData = await fetchUser();
-      if (userData && allowedRoles.includes(userData.user.role)) {
+      if (userData?.data?.user && allowedRoles.includes(userData.data.user.role)) {
         setUser(userData);
       } else {
         toast.error("You are not authorized to access this page");

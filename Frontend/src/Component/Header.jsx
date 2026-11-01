@@ -38,7 +38,7 @@ function Header() {
 
       if (response.data.success) {
         setUserLoggedIn(true);
-        setUserData(response.data.user);
+        setUserData(response.data.data?.user);
       } else {
         setUserLoggedIn(false);
       }

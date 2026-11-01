@@ -55,7 +55,7 @@ const Contact = () => {
       try {
         const response = await api.get('/api/v1/user/verify-user', {
         });
-        return { success: response.data.success, role: response.data.role };
+        return { success: response.data.success, role: response.data.data?.role };
       } catch (error) {
         console.error('Error verifying user:', error);
         return false;

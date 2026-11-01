@@ -16,7 +16,7 @@ function MyProduct() {
 
         if (response.data?.success) {
           // Sort orders: pending first, then shipping, then completed
-          const sortedOrders = (response.data.orders || []).sort((a, b) => {
+          const sortedOrders = (response.data.data?.orders || []).sort((a, b) => {
             const statusOrder = { 'pending': 1, 'shipping': 2, 'completed': 3 };
             const aStatus = a.order_status?.toLowerCase() || '';
             const bStatus = b.order_status?.toLowerCase() || '';

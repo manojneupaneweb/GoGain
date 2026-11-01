@@ -23,9 +23,9 @@ function UserProfile() {
 
         if (response.data.success) {
           setProfileData({
-            user: response.data.user,
-            orders: response.data.orders || [],
-            plans: response.data.plans || []
+            user: response.data.data?.user,
+            orders: response.data.data?.orders || [],
+            plans: response.data.data?.plans || []
           });
         } else {
           setError('Failed to fetch user data');

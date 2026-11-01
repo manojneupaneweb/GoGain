@@ -35,7 +35,7 @@ export default function AdminLayout() {
       console.log('User fetch response:', response.data);
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser(response.data.data?.user);
       } else {
         console.error('Failed to fetch user data:', response.data.message);
         setUser(null);
