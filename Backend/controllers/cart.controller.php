@@ -21,12 +21,11 @@ class CartController
     public function addToCart()
     {
         $data = json_decode(file_get_contents("php://input"), true);
-        $user_id = $_SESSION['user_id'] ?? 1;
+        $user_id = $_SESSION['user_id'] ?? null;
         $product_id = $data['product_id'] ?? null;
-        $quantity = $data['quantity'] ?? 1;
-        $price = $data['price'] ?? 1;
+        $quantity = isset($data['quantity']) ? (int) $data['quantity'] : 1;
 
-        if (!$user_id || !$product_id) {
+        if (!$user_id || !$product_id || $quantity < 1) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Missing required fields.']);
             return;
@@ -35,7 +34,16 @@ class CartController
         try {
             global $pdo;
 
-            // Check if item already exists in cart
+            $productStmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
+            $productStmt->execute([$product_id]);
+            $product = $productStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$product) {
+                http_response_code(404);
+                echo json_encode(['status' => 'error', 'message' => 'Product not found.']);
+                return;
+            }
+            $price = $product['price'];
+
             $stmt = $pdo->prepare("SELECT 1 FROM cart WHERE user_id = ? AND product_id = ?");
             $stmt->execute([$user_id, $product_id]);
 
@@ -265,150 +273,111 @@ class OrderController
 
     public function createOrder()
     {
-        session_start();
-
-        try {
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (!$input) {
-                throw new Exception("Invalid input data");
-            }
-
-            $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId) {
-                throw new Exception("User not logged in");
-            }
-
-            $paymentStatus = $input['payment_status'] ?? 'complete';
-            $orderStatus   = $input['order_status'] ?? 'pending';
-
-            $cartItems = $this->getCartItemsByUser($userId);
-            if (empty($cartItems)) {
-                throw new Exception("Cart is empty");
-            }
-
-            // ✅ Fetch delivery address from users table
-            $stmtUser = $this->pdo->prepare("SELECT fullName, email, delivery_address FROM users WHERE id = :id LIMIT 1");
-            $stmtUser->execute([':id' => $userId]);
-            $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
-            if (!$user) {
-                throw new Exception("User not found");
-            }
-            $deliveryAddress = $user['delivery_address'] ?? '';
-
-            $createdOrders = [];
-
-            foreach ($cartItems as $item) {
-                $totalPrice = $item['price'] * $item['quantity'];
-                $id = $this->generateUUID();
-
-                $sql = "INSERT INTO orders 
-                    (id, user_id, product_id, quantity, total_price, payment_status, order_status, delivery_address) 
-                VALUES 
-                    (:id, :user_id, :product_id, :quantity, :total_price, :payment_status, :order_status, :delivery_address)";
-
-                $stmt = $this->pdo->prepare($sql);
-                $success = $stmt->execute([
-                    ':id'               => $id,
-                    ':user_id'          => $userId,
-                    ':product_id'       => $item['product_id'],
-                    ':quantity'         => $item['quantity'],
-                    ':total_price'      => $totalPrice,
-                    ':payment_status'   => $paymentStatus,
-                    ':order_status'     => $orderStatus,
-                    ':delivery_address' => $deliveryAddress
-                ]);
-
-                if (!$success) {
-                    throw new Exception("Failed to create order for product {$item['product_id']}");
-                }
-
-                $createdOrders[] = [
-                    'order_id'   => $id,
-                    'product_id' => $item['product_id'],
-                    'quantity'   => $item['quantity'],
-                    'price'      => $item['price'],
-                    'total'      => $totalPrice
-                ];
-            }
-
-            // Clear cart only after successful order creation
-            $this->deleteCartItemsByUser($userId);
-
-            // ✅ Prepare email
-            $to = $user['email'];
-            $subject = "Order Confirmation - Thank you for your purchase";
-
-            $tableRows = "";
-            $sno = 1;
-            foreach ($createdOrders as $order) {
-                $sqlProduct = "SELECT name, image FROM products WHERE id = :id LIMIT 1";
-                $stmtProduct = $this->pdo->prepare($sqlProduct);
-                $stmtProduct->execute([':id' => $order['product_id']]);
-                $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
-
-                $productName = $product['name'] ?? "Unknown Product";
-                $productImage = $product['image'] ?? "";
-
-                $tableRows .= "
-            <tr>
-                <td style='text-align: center;'>{$sno}</td>
-                <td>
-                    " . ($productImage ? "<img src='{$productImage}' alt='{$productName}' width='50' style='vertical-align: middle; margin-right: 8px;' />" : "") . "
-                    {$productName}
-                </td>
-                <td style='text-align: center;'>{$order['quantity']}</td>
-                <td style='text-align: right;'>{$order['price']}</td>
-                <td style='text-align: right;'>{$order['total']}</td>
-            </tr>
-        ";
-                $sno++;
-            }
-
-            $messageBody = "
-        <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
-            <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
-            <p>Thank you for shopping with us! Your order has been successfully placed. Delivery Address: <strong>{$deliveryAddress}</strong></p>
-
-            <table border='0' cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;'>
-                <thead>
-                    <tr style='background-color: #2E86C1; color: #fff;'>
-                        <th style='text-align: center;'>S.No</th>
-                        <th style='text-align: left;'>Product</th>
-                        <th style='text-align: center;'>Quantity</th>
-                        <th style='text-align: right;'>Price</th>
-                        <th style='text-align: right;'>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    $tableRows
-                </tbody>
-            </table>
-
-            <p style='margin-top: 20px;'>We will notify you once your order is shipped. If you have any questions, feel free to reply to this email.</p>
-
-            <p style='margin-top: 30px; font-weight: bold; color: #2E86C1;'>Thank you for choosing us!</p>
-            <p style='font-size: 12px; color: #777;'>This is an automated email, please do not reply directly.</p>
-        </div>
-        ";
-
-            sendMail($to, $subject, $messageBody);
-
-            return [
-                'success' => true,
-                'orders'  => $createdOrders
-            ];
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Server error'
-            ];
-        }
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'An order is created only after payment is verified.'
+        ]);
     }
 
+    public function placePaidOrder($userId)
+    {
+        $cartItems = $this->lockedCart($userId);
+        if (empty($cartItems)) {
+            throw new Exception('Cart is empty');
+        }
 
+        $stmtUser = $this->pdo->prepare("SELECT fullName, email, delivery_address FROM users WHERE id = ? LIMIT 1");
+        $stmtUser->execute([$userId]);
+        $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            throw new Exception('User not found');
+        }
 
+        $deliveryAddress = $user['delivery_address'] ?? '';
+        $createdOrders = [];
 
+        foreach ($cartItems as $item) {
+            if ((int) $item['stock'] < (int) $item['quantity']) {
+                throw new Exception('Not enough stock');
+            }
+
+            $totalPrice = $item['price'] * $item['quantity'];
+            $id = $this->generateUUID();
+            $stmt = $this->pdo->prepare("
+                INSERT INTO orders
+                    (id, user_id, product_id, quantity, total_price, payment_status, order_status, delivery_address)
+                VALUES
+                    (?, ?, ?, ?, ?, 'complete', 'pending', ?)
+            ");
+            $stmt->execute([
+                $id,
+                $userId,
+                $item['product_id'],
+                $item['quantity'],
+                $totalPrice,
+                $deliveryAddress
+            ]);
+
+            $stock = $this->pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
+            $stock->execute([$item['quantity'], $item['product_id']]);
+
+            $createdOrders[] = [
+                'order_id' => $id,
+                'product_id' => $item['product_id'],
+                'product_name' => $item['name'],
+                'product_image' => $item['image'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+                'total' => $totalPrice
+            ];
+        }
+
+        $this->deleteCartItemsByUser($userId);
+
+        return [
+            'user' => $user,
+            'address' => $deliveryAddress,
+            'orders' => $createdOrders
+        ];
+    }
+
+    private function lockedCart($userId)
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT c.product_id, c.quantity, p.price, p.stock, p.name, p.image
+            FROM cart c
+            INNER JOIN products p ON p.id = c.product_id
+            WHERE c.user_id = ?
+            FOR UPDATE
+        ");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function quoteCart($userId)
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT c.quantity, p.price
+            FROM cart c
+            INNER JOIN products p ON p.id = c.product_id
+            WHERE c.user_id = ?
+        ");
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!$rows) {
+            return null;
+        }
+
+        $subtotal = 0;
+        foreach ($rows as $row) {
+            $subtotal += $row['price'] * $row['quantity'];
+        }
+
+        // Same shipping rule as the cart page.
+        $shipping = $subtotal > 100 ? 0 : 10;
+        return $subtotal + $shipping;
+    }
 
 
     public function getCartItemsByUser($userId)
@@ -447,159 +416,65 @@ class PlanController
         $this->pdo = $db;
     }
 
-
     public function createPlan()
     {
-        header('Content-Type: application/json');
-        session_start();
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'A plan is created only after payment is verified.'
+        ]);
+    }
 
-        global $pdo;
+    public function placePaidPlan($userId, array $plan)
+    {
+        $today = date('Y-m-d');
+        $now = date('Y-m-d H:i:s');
+        $days = (int) $plan['days'];
+        $planName = $plan['name'];
 
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-            return;
-        }
-
-        try {
-            $userId = $_SESSION['user_id'];
-            $input = json_decode(file_get_contents('php://input'), true);
-
-            if (!isset($input['planItem'])) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Missing planItem']);
-                return;
-            }
-
-            $planItem = $input['planItem'];
-
-            if (empty($planItem['name']) || empty($planItem['duration'])) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'message' => 'Missing name or duration']);
-                return;
-            }
-
-            $planName = $planItem['name'];
-            $duration = $planItem['duration'];
-            $today = date('Y-m-d');
-            $now = date('Y-m-d H:i:s');
-
-            // Map duration to days
-            $durationDays = match ($duration) {
-                '1 Month' => 30,
-                '3 Months' => 90,
-                '6 Months' => 180,
-                '1 Year' => 365,
-                default => 30,
-            };
-
-            // Get latest plan of user
-            $stmt = $pdo->prepare("
-            SELECT * FROM user_plans 
-            WHERE user_id = :user_id 
-            ORDER BY expire_date DESC LIMIT 1
+        $stmt = $this->pdo->prepare("
+            SELECT id, plan_name, start_date, expire_date
+            FROM user_plans
+            WHERE user_id = ?
+            ORDER BY expire_date DESC
+            LIMIT 1
+            FOR UPDATE
         ");
-            $stmt->execute([':user_id' => $userId]);
-            $lastPlan = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([$userId]);
+        $lastPlan = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($lastPlan) {
-                if ($lastPlan['plan_name'] === $planName) {
-                    // SAME PLAN → extend expiry
-                    $newExpireDate = date('Y-m-d', strtotime($lastPlan['expire_date'] . " +{$durationDays} days"));
-
-                    $update = $pdo->prepare("
-                    UPDATE user_plans 
-                    SET expire_date = :expire_date, updated_at = :updated_at 
-                    WHERE id = :id
-                ");
-                    $update->execute([
-                        ':expire_date' => $newExpireDate,
-                        ':updated_at' => $now,
-                        ':id' => $lastPlan['id']
-                    ]);
-
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Plan extended successfully',
-                        'data' => [
-                            'plan_name' => $planName,
-                            'start_date' => $lastPlan['start_date'],
-                            'expire_date' => $newExpireDate
-                        ]
-                    ]);
-                    return;
-                } else {
-                    // DIFFERENT PLAN → delete all past plans of this user
-                    $pdo->prepare("DELETE FROM user_plans WHERE user_id = :user_id")
-                        ->execute([':user_id' => $userId]);
-
-                    $newExpireDate = date('Y-m-d', strtotime("+{$durationDays} days"));
-                    $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
-
-                    $insert = $pdo->prepare("
-                    INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
-                    VALUES (:id, :user_id, :plan_name, :start_date, :expire_date, :created_at, :updated_at)
-                ");
-                    $insert->execute([
-                        ':id' => $id,
-                        ':user_id' => $userId,
-                        ':plan_name' => $planName,
-                        ':start_date' => $today,
-                        ':expire_date' => $newExpireDate,
-                        ':created_at' => $now,
-                        ':updated_at' => $now
-                    ]);
-
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Past plans deleted, new plan added successfully',
-                        'data' => [
-                            'id' => $id,
-                            'plan_name' => $planName,
-                            'start_date' => $today,
-                            'expire_date' => $newExpireDate
-                        ]
-                    ]);
-                    return;
-                }
-            } else {
-                // NO PLAN → insert new
-                $newExpireDate = date('Y-m-d', strtotime("+{$durationDays} days"));
-                $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
-
-                $insert = $pdo->prepare("
-                INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
-                VALUES (:id, :user_id, :plan_name, :start_date, :expire_date, :created_at, :updated_at)
+        if ($lastPlan && $lastPlan['plan_name'] === $planName) {
+            $newExpireDate = date('Y-m-d', strtotime($lastPlan['expire_date'] . " +{$days} days"));
+            $update = $this->pdo->prepare("
+                UPDATE user_plans
+                SET expire_date = ?, updated_at = ?
+                WHERE id = ?
             ");
-                $insert->execute([
-                    ':id' => $id,
-                    ':user_id' => $userId,
-                    ':plan_name' => $planName,
-                    ':start_date' => $today,
-                    ':expire_date' => $newExpireDate,
-                    ':created_at' => $now,
-                    ':updated_at' => $now
-                ]);
-
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Plan created successfully',
-                    'data' => [
-                        'id' => $id,
-                        'plan_name' => $planName,
-                        'start_date' => $today,
-                        'expire_date' => $newExpireDate
-                    ]
-                ]);
-                return;
-            }
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error',
-            ]);
+            $update->execute([$newExpireDate, $now, $lastPlan['id']]);
+            return [
+                'plan_name' => $planName,
+                'start_date' => $lastPlan['start_date'],
+                'expire_date' => $newExpireDate
+            ];
         }
+
+        if ($lastPlan) {
+            $this->pdo->prepare("DELETE FROM user_plans WHERE user_id = ?")->execute([$userId]);
+        }
+
+        $newExpireDate = date('Y-m-d', strtotime("+{$days} days"));
+        $id = substr(str_replace('-', '', \Ramsey\Uuid\Uuid::uuid4()->toString()), 0, 30);
+        $insert = $this->pdo->prepare("
+            INSERT INTO user_plans (id, user_id, plan_name, start_date, expire_date, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $insert->execute([$id, $userId, $planName, $today, $newExpireDate, $now, $now]);
+
+        return [
+            'id' => $id,
+            'plan_name' => $planName,
+            'start_date' => $today,
+            'expire_date' => $newExpireDate
+        ];
     }
 }
