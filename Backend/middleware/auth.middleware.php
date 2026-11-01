@@ -21,7 +21,6 @@ function loadUserFromAccessCookie()
     try {
         $decoded = JWT::decode($token, new Key($_ENV['ACCESS_TOKEN_SECRET'], 'HS256'));
     } catch (Exception $e) {
-            error_log($e->getMessage());
         error_log($e->getMessage());
         http_response_code(401);
         echo json_encode([
@@ -45,14 +44,14 @@ function loadUserFromAccessCookie()
         exit;
     }
 
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['user_role'] = $user['role'];
+        $GLOBALS['auth_user'] = $user;
 
     return $user;
+}
+
+function authUserId()
+{
+    return $GLOBALS['auth_user']['id'] ?? null;
 }
 
 function checkAuth()

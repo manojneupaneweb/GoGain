@@ -112,7 +112,7 @@ class DashboardController
 
         try {
             // Get current user ID from token
-            $currentUserId = $_SESSION['user_id'];
+            $currentUserId = authUserId();
 
             // Get all users
             $stmt = $pdo->prepare("SELECT id, fullName, email, avatar,  role FROM users");
@@ -269,7 +269,7 @@ class DashboardController
                 <html>
                 <body>
                     <h2>Order Delivered Successfully</h2>
-                    <p>Hi, your order has been delivered to <strong>{$orderInfo['delivery_address']}</strong>. Here are the details:</p>
+                    <p>Hi, your order has been delivered to <strong>" . h($orderInfo['delivery_address']) . "</strong>. Here are the details:</p>
                     <table border='1' cellpadding='10' cellspacing='0' style='border-collapse: collapse;'>
                         <tr>
                             <th>Product Name</th>
@@ -278,10 +278,10 @@ class DashboardController
                             <th>Price</th>
                         </tr>
                         <tr>
-                            <td>{$orderInfo['product_name']}</td>
-                            <td>{$orderInfo['description']}</td>
-                            <td>{$orderInfo['quantity']}</td>
-                            <td>Rs. {$orderInfo['price']}</td>
+                            <td>" . h($orderInfo['product_name']) . "</td>
+                            <td>" . h($orderInfo['description']) . "</td>
+                            <td>" . h($orderInfo['quantity']) . "</td>
+                            <td>Rs. " . h($orderInfo['price']) . "</td>
                         </tr>
                     </table>
                     <p>Thank you for shopping with us!</p>
@@ -342,7 +342,7 @@ class DashboardController
 
         try {
             // Trainer check
-            $trainer = $_SESSION['user_id'] ?? null;
+            $trainer = authUserId();
             if (!$trainer) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -350,7 +350,7 @@ class DashboardController
             }
 
             $data = json_decode(file_get_contents("php://input"), true);
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
             $date   = date('Y-m-d');
 
             // First check if same user already has activity for today
@@ -444,7 +444,7 @@ class DashboardController
 
         try {
             // Check if user is logged in
-            $userId = $_SESSION['user_id'] ?? null;
+            $userId = authUserId();
             if (!$userId) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -503,7 +503,7 @@ class DashboardController
         global $pdo;
 
         try {
-            $userId = $_SESSION['user_id'] ?? null;
+            $userId = authUserId();
             if (!$userId) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);

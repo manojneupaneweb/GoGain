@@ -23,6 +23,6 @@ switch (true) {
 
     default:
         http_response_code(404);
-        echo json_encode(["message" => "Route not found"]);
+        echo json_encode(['success' => false, 'message' => 'Route not found', 'data' => null]);
         break;
 }

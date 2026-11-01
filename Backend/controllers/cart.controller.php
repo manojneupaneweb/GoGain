@@ -21,13 +21,13 @@ class CartController
     public function addToCart()
     {
         $data = json_decode(file_get_contents("php://input"), true);
-        $user_id = $_SESSION['user_id'] ?? null;
+        $user_id = authUserId();
         $product_id = $data['product_id'] ?? null;
         $quantity = isset($data['quantity']) ? (int) $data['quantity'] : 1;
 
         if (!$user_id || !$product_id || $quantity < 1) {
             http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Missing required fields.']);
+            echo json_encode(['success' => false, 'message' => 'Missing required fields.', 'data' => null]);
             return;
         }
 
@@ -39,7 +39,7 @@ class CartController
             $product = $productStmt->fetch(PDO::FETCH_ASSOC);
             if (!$product) {
                 http_response_code(404);
-                echo json_encode(['status' => 'error', 'message' => 'Product not found.']);
+                echo json_encode(['success' => false, 'message' => 'Product not found.', 'data' => null]);
                 return;
             }
             $price = $product['price'];
@@ -49,7 +49,7 @@ class CartController
 
             if ($stmt->fetch()) {
                 http_response_code(200);
-                echo json_encode(['status' => 'info', 'message' => 'Product already in cart']);
+                echo json_encode(['success' => true, 'message' => 'Product already in cart', 'data' => null]);
                 exit; // stop execution here
             }
 
@@ -61,7 +61,7 @@ class CartController
 
             http_response_code(201);
             echo json_encode([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'Item added to cart',
                 'data' => [
                     'id' => $id,
@@ -75,7 +75,7 @@ class CartController
         } catch (PDOException $e) {
             error_log($e->getMessage());
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Server error']);
+            echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
         }
     }
 
@@ -83,7 +83,7 @@ class CartController
     {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized login function']);
             return;
@@ -91,7 +91,7 @@ class CartController
 
         global $pdo;
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
             $stmt = $pdo->prepare("
             SELECT 
                 cart.id AS cart_id,
@@ -143,7 +143,7 @@ class CartController
         header('Content-Type: application/json');
 
         // Get logged-in user ID from session
-        $user_id = $_SESSION['user_id'] ?? null;
+        $user_id = authUserId();
 
         if (!$user_id) {
             http_response_code(401);
@@ -206,7 +206,7 @@ class CartController
     {
         header('Content-Type: application/json');
 
-        $user_id = $_SESSION['user_id'] ?? null;
+        $user_id = authUserId();
 
         if (!$user_id || !$product_id) {
             http_response_code(400);

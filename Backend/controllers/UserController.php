@@ -3,6 +3,7 @@ require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
 require_once __DIR__ . '/../utils/otp.php';
 require_once __DIR__ . '/../utils/cookies.php';
+require_once __DIR__ . '/../utils/rate_limit.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Ramsey\Uuid\Uuid;
@@ -41,10 +42,13 @@ class UserController
             http_response_code(405);
             echo json_encode([
                 'success' => false,
-                'message' => 'Method not allowed. Use POST.'
+                'message' => 'Method not allowed. Use POST.',
+                'data' => null,
             ]);
             return;
         }
+
+        rateLimit('otp', 5, 900);
 
         $input = json_decode(file_get_contents('php://input'), true);
         $email = trim($input['email'] ?? '');
@@ -279,7 +283,7 @@ class UserController
                     </head>
                     <body>
                         <div class='container'>
-                            <h2>Welcome to GoGain, {$fullName}! </h2>
+                            <h2>Welcome to GoGain, " . h($fullName) . "! </h2>
                             <p class='message'>Your account is now active. Log in with your email and password to start your fitness journey, track your progress, and push beyond your limits.</p>
                             <p class='message'><em>“Don’t wish for it. Work for it.”</em> — Let’s get moving!</p>
                             <div class='footer'>
@@ -324,9 +328,11 @@ class UserController
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed', 'data' => null]);
             return;
         }
+
+        rateLimit('login', 8, 900);
 
         $data = json_decode(file_get_contents('php://input'), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -390,13 +396,15 @@ class UserController
         echo json_encode([
             'success' => true,
             'message' => 'Login successful',
-            'user' => [
-                'id' => $user['id'],
-                'fullName' => $user['fullName'],
-                'email' => $user['email'],
-                'avatar' => $user['avatar'],
-                'last_login' => $user['last_login'],
-                'role' => $user['role']
+            'data' => [
+                'user' => [
+                    'id' => $user['id'],
+                    'fullName' => $user['fullName'],
+                    'email' => $user['email'],
+                    'avatar' => $user['avatar'],
+                    'last_login' => $user['last_login'],
+                    'role' => $user['role']
+                ]
             ]
         ]);
     }
@@ -480,7 +488,7 @@ class UserController
         // Get the raw JSON input
         $data = json_decode(file_get_contents("php://input"), true);
 
-        $userId = $_SESSION['user_id'];
+        $userId = authUserId();
 
         if (!$userId) {
             http_response_code(401);
@@ -539,7 +547,7 @@ class UserController
 
             $messageBody = "
                 <div style='font-family: Arial, sans-serif; color: #333; line-height: 1.6;'>
-                    <h2 style='color: #2E86C1;'>Hello {$user['fullName']},</h2>
+                    <h2 style='color: #2E86C1;'>Hello " . h($user['fullName']) . ",</h2>
                     <p>Your password has been successfully updated.</p>
 
                     <p>If you did not perform this change, please <a href='https://gogain.com/contact-support' style='color: #2E86C1; text-decoration: none;'>contact our support team</a> immediately.</p>
@@ -571,14 +579,14 @@ class UserController
     {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized login function']);
             return;
         }
 
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
 
             // Fetch user info (excluding password)
             $stmt = $this->pdo->prepare("SELECT fullName, role, avatar, last_login FROM users WHERE id = ?");
@@ -590,7 +598,7 @@ class UserController
                 $updateStmt = $this->pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
                 $updateStmt->execute([$userId]);
 
-                echo json_encode(['success' => true, 'user' => $user]);
+                echo json_encode(['success' => true, 'message' => 'User loaded', 'data' => ['user' => $user]]);
             } else {
                 http_response_code(404);
                 echo json_encode(['success' => false, 'message' => 'User not found']);
@@ -606,14 +614,14 @@ class UserController
     {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized login']);
             return;
         }
 
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
 
             // 1. Fetch user info
             $stmtUser = $this->pdo->prepare("
@@ -669,9 +677,12 @@ class UserController
             // Send full response
             echo json_encode([
                 'success' => true,
-                'user' => $user,
-                'orders' => $orders,
-                'plans' => $plans
+                'message' => 'Profile loaded',
+                'data' => [
+                    'user' => $user,
+                    'orders' => $orders,
+                    'plans' => $plans
+                ]
             ]);
             exit;
         } catch (Exception $e) {
@@ -688,14 +699,14 @@ class UserController
     {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized login']);
             return;
         }
 
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
 
             $stmt = $this->pdo->prepare("
     SELECT 
@@ -720,7 +731,7 @@ class UserController
             echo json_encode([
                 'success' => true,
                 'message' => 'Orders fetched successfully',
-                'orders' => $orders,
+                'data' => ['orders' => $orders],
             ]);
             exit;
         } catch (Exception $e) {
@@ -739,9 +750,11 @@ class UserController
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed.']);
+            echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed.', 'data' => null]);
             exit;
         }
+
+        rateLimit('contact', 5, 3600);
 
         try {
             // Receive raw JSON input
@@ -836,14 +849,14 @@ class UserController
         global $pdo;
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             return;
         }
 
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
             if ($userId) {
                 $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
                 $stmt->execute([$userId]);
@@ -854,7 +867,7 @@ class UserController
                 echo json_encode([
                     'success' => true,
                     'message' => 'This user is logged in and verified.',
-                    'role' => $role,
+                    'data' => ['role' => $role],
                 ]);
             } else {
                 http_response_code(404);
@@ -874,6 +887,7 @@ class UserController
     {
         try {
             header('Content-Type: application/json');
+            rateLimit('reset', 5, 900);
 
             $data = json_decode(file_get_contents('php://input'), true);
 
@@ -967,7 +981,7 @@ class UserController
 
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!authUserId()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             return;
@@ -983,7 +997,7 @@ class UserController
         }
 
         try {
-            $userId = $_SESSION['user_id'];
+            $userId = authUserId();
             $stmt = $pdo->prepare("UPDATE users SET delivery_address = ? WHERE id = ?");
             $stmt->execute([$delivery_address, $userId]);
 

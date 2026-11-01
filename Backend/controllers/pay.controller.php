@@ -195,7 +195,7 @@ class PaymentController
     {
         $data = json_decode(file_get_contents('php://input'), true) ?: [];
         $purpose = ($data['purpose'] ?? '') === 'plan' ? 'plan' : 'order';
-        $userId = $_SESSION['user_id'] ?? null;
+        $userId = authUserId();
         if (!$userId) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -273,7 +273,7 @@ class PaymentController
 
     private function findPayment($provider, $reference)
     {
-        $userId = $_SESSION['user_id'] ?? null;
+        $userId = authUserId();
         $stmt = $this->pdo->prepare("
             SELECT id, user_id, provider, purpose, reference, amount_paisa, plan_key, status
             FROM payments

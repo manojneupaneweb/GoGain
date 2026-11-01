@@ -39,7 +39,7 @@ try {
         $planController->createPlan();
     } else {
         http_response_code(404);
-        echo json_encode(['message' => 'Route not found']);
+        echo json_encode(['success' => false, 'message' => 'Route not found', 'data' => null]);
     }
 } catch (Exception $e) {
             error_log($e->getMessage());
