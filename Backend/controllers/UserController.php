@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../middleware/email.middleware.php';
 require_once __DIR__ . '/../utils/Cloudinary.php';
+require_once __DIR__ . '/../utils/http.php';
 require_once __DIR__ . '/../utils/otp.php';
 require_once __DIR__ . '/../utils/cookies.php';
 require_once __DIR__ . '/../utils/rate_limit.php';
@@ -889,9 +890,9 @@ class UserController
             header('Content-Type: application/json');
             rateLimit('reset', 5, 900);
 
-            $data = json_decode(file_get_contents('php://input'), true);
+            $data = readJsonBody();
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            if ($data === null) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
                 return;

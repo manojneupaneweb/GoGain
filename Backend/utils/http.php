@@ -27,6 +27,20 @@ function registerExceptionHandler()
     });
 }
 
+function readJsonBody()
+{
+    if (array_key_exists('test_json_body', $GLOBALS)) {
+        return $GLOBALS['test_json_body'];
+    }
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return null;
+    }
+
+    return is_array($data) ? $data : null;
+}
+
 function pageParams()
 {
     $page = max(1, (int) ($_GET['page'] ?? 1));

@@ -59,10 +59,15 @@ function checkAuth()
     loadUserFromAccessCookie();
 }
 
+function userHasRole(array $user, $role)
+{
+    return ($user['role'] ?? '') === $role;
+}
+
 function checkAdminAuth()
 {
     $user = loadUserFromAccessCookie();
-    if ($user['role'] !== 'admin') {
+    if (!userHasRole($user, 'admin')) {
         http_response_code(403);
         echo json_encode([
             'success' => false,
@@ -75,7 +80,7 @@ function checkAdminAuth()
 function checkTrainerAuth()
 {
     $user = loadUserFromAccessCookie();
-    if ($user['role'] !== 'trainer') {
+    if (!userHasRole($user, 'trainer')) {
         http_response_code(403);
         echo json_encode([
             'success' => false,

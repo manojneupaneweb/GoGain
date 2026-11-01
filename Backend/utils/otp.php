@@ -2,6 +2,22 @@
 
 function ensureOtpTable(PDO $pdo)
 {
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS email_otps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                purpose TEXT NOT NULL,
+                code_hash TEXT NOT NULL,
+                attempts INTEGER NOT NULL DEFAULT 0,
+                expires_at TEXT NOT NULL,
+                used_at TEXT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        return;
+    }
+
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS email_otps (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -23,16 +39,17 @@ function issueOtp(PDO $pdo, $email, $purpose)
 
     $pdo->prepare("
         UPDATE email_otps
-        SET used_at = NOW()
+        SET used_at = ?
         WHERE email = ? AND purpose = ? AND used_at IS NULL
-    ")->execute([$email, $purpose]);
+    ")->execute([date('Y-m-d H:i:s'), $email, $purpose]);
 
     $code = (string) random_int(100000, 999999);
     $hash = password_hash($code, PASSWORD_DEFAULT);
+    $expires = date('Y-m-d H:i:s', time() + 300);
     $pdo->prepare("
         INSERT INTO email_otps (email, purpose, code_hash, expires_at)
-        VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))
-    ")->execute([$email, $purpose, $hash]);
+        VALUES (?, ?, ?, ?)
+    ")->execute([$email, $purpose, $hash, $expires]);
 
     return $code;
 }
@@ -57,7 +74,7 @@ function verifyOtpCode(PDO $pdo, $email, $purpose, $code)
     }
 
     if (strtotime($row['expires_at']) < time() || (int) $row['attempts'] >= 5) {
-        $pdo->prepare("UPDATE email_otps SET used_at = NOW() WHERE id = ?")->execute([$row['id']]);
+        $pdo->prepare("UPDATE email_otps SET used_at = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $row['id']]);
         return null;
     }
 
@@ -66,18 +83,19 @@ function verifyOtpCode(PDO $pdo, $email, $purpose, $code)
         return null;
     }
 
-    $pdo->prepare("UPDATE email_otps SET used_at = NOW() WHERE id = ?")->execute([$row['id']]);
+    $pdo->prepare("UPDATE email_otps SET used_at = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $row['id']]);
 
     $token = bin2hex(random_bytes(32));
     $proofPurpose = $purpose . '_proof';
     $pdo->prepare("
-        UPDATE email_otps SET used_at = NOW()
+        UPDATE email_otps SET used_at = ?
         WHERE email = ? AND purpose = ? AND used_at IS NULL
-    ")->execute([$email, $proofPurpose]);
+    ")->execute([date('Y-m-d H:i:s'), $email, $proofPurpose]);
+    $proofExpires = date('Y-m-d H:i:s', time() + 900);
     $pdo->prepare("
         INSERT INTO email_otps (email, purpose, code_hash, expires_at)
-        VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE))
-    ")->execute([$email, $proofPurpose, password_hash($token, PASSWORD_DEFAULT)]);
+        VALUES (?, ?, ?, ?)
+    ")->execute([$email, $proofPurpose, password_hash($token, PASSWORD_DEFAULT), $proofExpires]);
 
     return $token;
 }
@@ -109,6 +127,6 @@ function consumeProof(PDO $pdo, $email, $purpose, $token)
         return false;
     }
 
-    $pdo->prepare("UPDATE email_otps SET used_at = NOW() WHERE id = ?")->execute([$row['id']]);
+    $pdo->prepare("UPDATE email_otps SET used_at = ? WHERE id = ?")->execute([date('Y-m-d H:i:s'), $row['id']]);
     return true;
 }

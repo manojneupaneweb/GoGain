@@ -6,6 +6,14 @@ require_once __DIR__ . '/../middleware/email.middleware.php';
 
 use Ramsey\Uuid\Uuid;
 
+function khaltiLookupMatches(array $lookup, array $payment)
+{
+    return ($lookup['status'] ?? '') === 'Completed'
+        && ($lookup['pidx'] ?? '') === ($payment['reference'] ?? '')
+        && (int) ($lookup['total_amount'] ?? 0) === (int) $payment['amount_paisa']
+        && ($lookup['purchase_order_id'] ?? '') === $payment['id'];
+}
+
 class PaymentController
 {
     private $pdo;
@@ -76,21 +84,10 @@ class PaymentController
         }
 
         $result = $this->khaltiRequest('/epayment/lookup/', ['pidx' => $pidx]);
-        if (!$result || ($result['status'] ?? '') !== 'Completed') {
+        $payment = $result ? $this->findPayment('khalti', $pidx) : null;
+        if (!$payment || !khaltiLookupMatches($result, $payment)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Payment not completed']);
-            return;
-        }
-
-        $payment = $this->findPayment('khalti', $pidx);
-        if (!$payment || (int) $result['total_amount'] !== (int) $payment['amount_paisa']) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Payment amount does not match']);
-            return;
-        }
-        if (($result['purchase_order_id'] ?? '') !== $payment['id']) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Payment does not match this order']);
+            echo json_encode(['success' => false, 'message' => 'Payment could not be verified']);
             return;
         }
 
